@@ -1,115 +1,185 @@
+# AcneNet: Classificação de Gravidade da Acne por Região Facial
 
-# 🧪 AcneNet: Classificação de Gravidade da Acne com Segmentação Facial
+Classificação automática da gravidade da acne (níveis 0–3) em cinco regiões do rosto, combinando segmentação facial com YOLOv8 e classificação com ResNet18.
 
-Este projeto visa classificar a gravidade da acne em diferentes regiões do rosto (testa, bochechas, nariz e queixo) utilizando uma abordagem baseada em **YOLOv8 para segmentação facial** e **ResNet18 para classificação**.
+**Regiões**: testa, nariz, queixo, bochecha esquerda, bochecha direita  
+**Classes**: 0 = sem acne, 1 = leve, 2 = moderada, 3 = severa
 
 ---
 
-## 📂 Estrutura do Projeto
+## Arquitetura
 
 ```
-acne_1024/              # Dataset original (Acne1024)
-backups/                # Backups de modelos antigos
-data/                   
-  ├── crops/            # Imagens segmentadas por região com YOLO
-  ├── final/            # Dados segmentados e splitados por região + gravidade
-  └── raw/              # Imagens cruas consolidadas de várias fontes
-data_test/              # Área opcional de testes
-Dataset/                # Outra fonte de dados (organizada por pastas Level)
-segment/
-  ├── segment_face/     # Ambiente virtual para segmentação (YOLO)
-  ├── requirements_segment.txt
-  └── yolo_train_and_segment_v2.ipynb
+Imagem facial
+     │
+     ▼
+YOLOv8 (segmentação facial)
+     │ crops 224×224 por região
+     ▼
+OptimizedMultiRegionResNet18
+  ├── ResNet18 backbone  →  feature vector (512-d)
+  ├── Region embedding   →  embedding (64-d)
+  └── MLP classifier     →  logits (4 classes)
+```
+
+A classe `OptimizedMultiRegionResNet18` está definida em [`training/model.py`](training/model.py). O modelo recebe o crop da região e o índice da região simultaneamente, permitindo que a mesma rede sirva as cinco regiões com embeddings distintos.
+
+---
+
+## Estrutura do Repositório
+
+```
 training/
-  ├── acne-training/    # Dados de treino (separados)
-  ├── models/           # Modelos treinados
-  ├── models_backup/    # Backup dos modelos antigos
-  ├── notebooks/        # Notebooks para treino e avaliação
-  ├── results/          # Resultados do treino
-  ├── utils/            # Scripts utilitários
-  └── requirements_training.txt
-.gitignore
-README.md
+  model.py                     Definição da arquitetura
+  predict.py                   Script de inferência (linha de comando)
+  models/                      Pesos finais treinados (um por região)
+    resnet18_forehead_final.pth
+    resnet18_nose_final.pth
+    resnet18_chin_final.pth
+    resnet18_left_cheek_final.pth
+    resnet18_right_cheek_final.pth
+  notebooks/                   Notebooks de treino e avaliação
+    ResNet18_SingleModel.ipynb     Treino e avaliação principal
+    FinalModel.ipynb               Pipeline completo
+    AcneNet_TrainAll_EvalTest.ipynb
+    ResNet18_All_Regions_Training.ipynb
+    ResNet18_Comparison_Training.ipynb
+    train_focal_augment_earlystop.ipynb
+  utils/                       Scripts de preparação de dados
+    prepare_dataset.py
+    distribute_unique_split.py
+    augment_class_0_train.py
+    augment_class_1_train.py
+    augment_class_3_train.py
+    count_classes.py
+  results/
+    resultado_comparativo_modelos.csv
+    comparacao_f1_por_classe.png
+  requirements_training.txt
+segment/
+  yolo_train_and_segment_v2.ipynb   Segmentação facial com YOLOv8
+  requirements_segment.txt
+acne_classifier_app/               App Flutter (protótipo mobile)
+papers/                            Artigos científicos (CBEB 2026, SIBGRAPI 2026)
+images/                            Figuras de documentação
 ```
 
----
-
-## ⚙️ Ambientes Virtuais
-
-- `segment_face`: Para segmentação facial com YOLOv8
-- `acne-training`: Para treinamento de classificadores (PyTorch/ResNet18)
-
-> Use `requirements_segment.txt` e `requirements_training.txt` para instalar os pacotes em cada ambiente.
+> Os datasets originais (Acne1024, ACNE04) não estão incluídos por tamanho. Para re-treinar, baixe os dados e siga o pipeline abaixo.
 
 ---
 
-## 🧩 Pipeline Geral
+## Requisitos de Hardware
 
-1. **📥 Consolidação de Dados**
-   - Script: `utils/prepare_dataset.py`
-   - Copia imagens de `acne_1024` e `Dataset/Train|Validation` para `data/raw/`
-
-2. **🧠 Segmentação Facial com YOLOv8**
-   - Notebook: `segment/yolo_train_and_segment_v2.ipynb`
-   - Treina YOLO com anotações de regiões faciais e gera `data/crops/{região}/{imagem}`
-
-3. **🔀 Split e Classificação por Gravidade**
-   - Script: `utils/distribute_unique_split.py`
-   - Lê as imagens em `data/crops` e divide em `train`, `val` e `test`, baseando-se no nome da imagem (`levleX_`, etc.)
-
-4. **📈 Treinamento de Modelos**
-   - Notebooks:
-     - `AcneNet_TrainAll_EvalTest.ipynb`: Treino global
-     - `ResNet18_All_Regions_Training.ipynb`: Treina por região
-     - `ResNet18_Comparison_Training.ipynb`: Avaliação comparativa
-     - `train_focal_augment_earlystop.ipynb`: Versão com focal loss, augmentation e early stopping
-
-5. **📊 Avaliação dos Resultados**
-   - Métricas: F1-score, precision, recall por região e gravidade
-   - Resultados salvos em `training/results/` e modelos em `training/models/`
+- GPU NVIDIA com CUDA 12.1 (testado na RTX 4070)
+- Python 3.10+
 
 ---
 
-## 🛠 Scripts Auxiliares
+## Configuração do Ambiente
 
-- `count_classes.py`: Conta o número de imagens por classe e região
-- `segment_combined_dataset.py`: Segmenta e salva todas as regiões detectadas
-- `augment_class_X_train.py`: Aplica augmentations seletivas por classe
-
----
-
-## ✅ Requisitos
-
-### Segmentação
+### 1. Inferência e Treinamento
 
 ```bash
-# Ative o ambiente segment_face
-pip install -r segment/requirements_segment.txt
-```
+python -m venv venv
 
-### Treinamento
+# Windows
+venv\Scripts\activate
+# Linux / macOS
+source venv/bin/activate
 
-```bash
-# Ative o ambiente acne-training
 pip install -r training/requirements_training.txt
 ```
 
+### 2. Segmentação facial (YOLOv8)
+
+```bash
+python -m venv venv_segment
+
+# Windows
+venv_segment\Scripts\activate
+# Linux / macOS
+source venv_segment/bin/activate
+
+pip install -r segment/requirements_segment.txt
+```
+
 ---
 
-## 📝 Observações
+## Inferência (modelo treinado)
 
-- Algumas classes (por exemplo, gravidade 3 em forehead) são naturalmente desbalanceadas.
-- Utiliza `EarlyStopping` e `Data Augmentation` para compensar o desequilíbrio.
-- As imagens são redimensionadas para **224x224** em todos os pontos do pipeline.
+Os pesos finais estão em `training/models/`. Cada arquivo corresponde a uma região facial.
+
+```bash
+cd training
+python predict.py caminho/para/imagem.jpg --region forehead --weights models/resnet18_forehead_final.pth
+```
+
+**Regiões válidas:** `forehead`, `nose`, `chin`, `left_cheek`, `right_cheek`
+
+Exemplo de saída:
+
+```
+Regiao: forehead
+Classe prevista: nivel_1 (1)
+  nivel_0: 0.0821
+  nivel_1: 0.7134
+  nivel_2: 0.1703
+  nivel_3: 0.0342
+```
+
+O script detecta GPU automaticamente. Sem GPU, roda em CPU.
 
 ---
 
-## 🤝 Contribuição
+## Pipeline de Treinamento (do zero)
 
-Sugestões de melhoria, testes em novos datasets e ajustes de arquitetura são bem-vindos!
+1. **Consolidar dados brutos**
+   ```bash
+   python training/utils/prepare_dataset.py
+   ```
+   Copia imagens dos datasets originais para `data/raw/`.
+
+2. **Segmentar regiões faciais**
+   Execute o notebook `segment/yolo_train_and_segment_v2.ipynb`.  
+   Gera crops 224×224 em `data/crops/{região}/`.
+
+3. **Dividir por gravidade (train/val/test)**
+   ```bash
+   python training/utils/distribute_unique_split.py
+   ```
+   Organiza em `data/final/{região}/{split}/{classe}/`.
+
+4. **Treinar o classificador**
+   Execute `training/notebooks/ResNet18_SingleModel.ipynb`.  
+   Salva o melhor modelo em `training/models/`.
+
+5. **Avaliar resultados**
+   Execute `training/notebooks/AcneNet_TrainAll_EvalTest.ipynb`.  
+   Gera métricas em `training/results/`.
 
 ---
 
-## 🧑‍💻 Autor
+## Modelo
 
-**Lucas Gonzaga** — Técnico em Informática Integrado (IFCE) | IA na Saúde | Fullstack | IA + Drones
+| Entrada | Formato |
+|---------|---------|
+| Imagem crop | tensor `[batch, 3, 224, 224]` |
+| Índice da região | tensor `[batch]` (int) |
+
+| Saída | Formato |
+|-------|---------|
+| Logits por classe | tensor `[batch, 4]` |
+
+Índices de região: `0=forehead`, `1=chin`, `2=nose`, `3=left_cheek`, `4=right_cheek`
+
+---
+
+## Resultados
+
+Consulte `training/results/resultado_comparativo_modelos.csv` para métricas detalhadas (F1, precision, recall) por região e gravidade.
+
+---
+
+## Autor
+
+Lucas Gonzaga — IFCE | PIBIC
