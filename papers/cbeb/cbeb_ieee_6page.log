@@ -1,0 +1,440 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.6.17)  30 JUN 2026 10:46
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**./cbeb_ieee_6page.tex
+(cbeb_ieee_6page.tex
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-01-04>
+(IEEEtran.cls
+Document Class: IEEEtran 2015/08/26 V1.8b by Michael Shell
+-- See the "IEEEtran_HOWTO" manual for usage information.
+-- http://www.michaelshell.org/tex/ieeetran/
+\@IEEEtrantmpdimenA=\dimen140
+\@IEEEtrantmpdimenB=\dimen141
+\@IEEEtrantmpdimenC=\dimen142
+\@IEEEtrantmpcountA=\count187
+\@IEEEtrantmpcountB=\count188
+\@IEEEtrantmpcountC=\count189
+\@IEEEtrantmptoksA=\toks17
+LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 5
+03.
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/psnfss\ot1ptm.fd
+File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
+)
+-- Using 8.5in x 11in (letter) paper.
+-- Using PDF output.
+\@IEEEnormalsizeunitybaselineskip=\dimen143
+-- This is a 10 point document.
+\CLASSINFOnormalsizebaselineskip=\dimen144
+\CLASSINFOnormalsizeunitybaselineskip=\dimen145
+\IEEEnormaljot=\dimen146
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <5> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <5> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <7> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <8> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <9> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <11> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <11> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <12> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <17> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <17> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <20> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <20> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <24> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1090.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/it' in size <24> not available
+(Font)              Font shape `OT1/ptm/b/it' tried instead on input line 1090.
+
+\IEEEquantizedlength=\dimen147
+\IEEEquantizedlengthdiff=\dimen148
+\IEEEquantizedtextheightdiff=\dimen149
+\IEEEilabelindentA=\dimen150
+\IEEEilabelindentB=\dimen151
+\IEEEilabelindent=\dimen152
+\IEEEelabelindent=\dimen153
+\IEEEdlabelindent=\dimen154
+\IEEElabelindent=\dimen155
+\IEEEiednormlabelsep=\dimen156
+\IEEEiedmathlabelsep=\dimen157
+\IEEEiedtopsep=\skip48
+\c@section=\count190
+\c@subsection=\count191
+\c@subsubsection=\count192
+\c@paragraph=\count193
+\c@IEEEsubequation=\count194
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\c@figure=\count195
+\c@table=\count196
+\@IEEEeqnnumcols=\count197
+\@IEEEeqncolcnt=\count198
+\@IEEEsubeqnnumrollback=\count199
+\@IEEEquantizeheightA=\dimen158
+\@IEEEquantizeheightB=\dimen159
+\@IEEEquantizeheightC=\dimen160
+\@IEEEquantizeprevdepth=\dimen161
+\@IEEEquantizemultiple=\count266
+\@IEEEquantizeboxA=\box51
+\@IEEEtmpitemindent=\dimen162
+\IEEEPARstartletwidth=\dimen163
+\c@IEEEbiography=\count267
+\@IEEEtranrubishbin=\box52
+) (C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/cite\cite.sty
+LaTeX Info: Redefining \cite on input line 302.
+LaTeX Info: Redefining \nocite on input line 332.
+Package: cite 2015/02/27  v 5.5
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmath.sty
+Package: amsmath 2023/05/13 v2.17o AMS math features
+\@mathmargin=\skip51
+
+For additional information on amsmath, use the `?' option.
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstext.sty
+Package: amstext 2021/08/26 v2.01 AMS text
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks18
+\ex@=\dimen164
+))
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen165
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn.sty
+Package: amsopn 2022/04/08 v2.04 operator names
+)
+\inf@bad=\count268
+LaTeX Info: Redefining \frac on input line 234.
+\uproot@=\count269
+\leftroot@=\count270
+LaTeX Info: Redefining \overline on input line 399.
+LaTeX Info: Redefining \colon on input line 410.
+\classnum@=\count271
+\DOTSCASE@=\count272
+LaTeX Info: Redefining \ldots on input line 496.
+LaTeX Info: Redefining \dots on input line 499.
+LaTeX Info: Redefining \cdots on input line 620.
+\Mathstrutbox@=\box53
+\strutbox@=\box54
+LaTeX Info: Redefining \big on input line 722.
+LaTeX Info: Redefining \Big on input line 723.
+LaTeX Info: Redefining \bigg on input line 724.
+LaTeX Info: Redefining \Bigg on input line 725.
+\big@size=\dimen166
+LaTeX Font Info:    Redeclaring font encoding OML on input line 743.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 744.
+\macc@depth=\count273
+LaTeX Info: Redefining \bmod on input line 905.
+LaTeX Info: Redefining \pmod on input line 910.
+LaTeX Info: Redefining \smash on input line 940.
+LaTeX Info: Redefining \relbar on input line 970.
+LaTeX Info: Redefining \Relbar on input line 971.
+\c@MaxMatrixCols=\count274
+\dotsspace@=\muskip16
+\c@parentequation=\count275
+\dspbrk@lvl=\count276
+\tag@help=\toks19
+\row@=\count277
+\column@=\count278
+\maxfields@=\count279
+\andhelp@=\toks20
+\eqnshift@=\dimen167
+\alignsep@=\dimen168
+\tagshift@=\dimen169
+\tagwidth@=\dimen170
+\totwidth@=\dimen171
+\lineht@=\dimen172
+\@envbody=\toks21
+\multlinegap=\skip52
+\multlinetaggap=\skip53
+\mathdisplay@stack=\toks22
+LaTeX Info: Redefining \[ on input line 2953.
+LaTeX Info: Redefining \] on input line 2954.
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amssymb.sty
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Redeclaring math symbol \hbar on input line 98.
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+)) (C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.st
+y
+Package: graphicx 2021/09/16 v1.2d Enhanced LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks23
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
+Package: graphics 2022/03/10 v1.4e Standard LaTeX Graphics (DPC,SPQR)
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty
+Package: trig 2021/08/11 v1.11 sin cos tan (DPC)
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.c
+fg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 107.
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
+File: pdftex.def 2022/09/22 v1.2b Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen173
+\Gin@req@width=\dimen174
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen175
+\lightrulewidth=\dimen176
+\cmidrulewidth=\dimen177
+\belowrulesep=\dimen178
+\belowbottomsep=\dimen179
+\aboverulesep=\dimen180
+\abovetopsep=\dimen181
+\cmidrulesep=\dimen182
+\cmidrulekern=\dimen183
+\defaultaddspace=\dimen184
+\@cmidla=\count280
+\@cmidlb=\count281
+\@aboverulesep=\dimen185
+\@belowrulesep=\dimen186
+\@thisruleclass=\count282
+\@lastruleclass=\count283
+\@thisrulewidth=\dimen187
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdf
+tex.def
+File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count284
+\l__pdf_internal_box=\box55
+) (cbeb_ieee_6page.aux)
+\openout1 = `cbeb_ieee_6page.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 10.
+LaTeX Font Info:    ... okay on input line 10.
+
+-- Lines per column: 56 (exact).
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mk
+ii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count285
+\scratchdimen=\dimen188
+\scratchbox=\box56
+\nofMPsegments=\count286
+\nofMParguments=\count287
+\everyMPshowfont=\toks24
+\MPscratchCnt=\count288
+\MPscratchDim=\dimen189
+\MPnumerator=\count289
+\makeMPintoPDFobject=\count290
+\everyMPtoPDFconversion=\toks25
+)
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-b
+ase.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.c
+fg
+File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
+))
+
+LaTeX Warning: No \author given.
+
+
+LaTeX Warning: No \author given.
+
+
+LaTeX Warning: No \author given.
+
+
+Underfull \hbox (badness 1762) in paragraph at lines 28--29
+\OT1/ptm/m/n/10 anatom-i-cal em-bed-dings. This de-sign ex-plic-itly in-te-grat
+es
+ []
+
+LaTeX Font Info:    Trying to load font information for U+msa on input line 32.
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 32.
+
+
+(C:\Users\GonLu\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+Underfull \hbox (badness 1742) in paragraph at lines 45--46
+\OT1/ptm/m/n/10 architectures---including ResNet, Ef-fi-cient-Net, and hy-brid
+ []
+
+
+Underfull \hbox (badness 2253) in paragraph at lines 45--46
+\OT1/ptm/m/n/10 CNN-transformer models---have shown promis-ing re-sults
+ []
+
+[1{C:/Users/GonLu/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/Go
+nLu/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}
+
+
+]
+<figs_extracted/img_p3_0.png, id=10, 1230.09563pt x 502.12593pt>
+File: figs_extracted/img_p3_0.png Graphic file (type png)
+<use figs_extracted/img_p3_0.png>
+Package pdftex.def Info: figs_extracted/img_p3_0.png  used on input line 59.
+(pdftex.def)             Requested size: 252.0pt x 102.86752pt.
+<figs_extracted/img_p3_1.png, id=11, 1156.32pt x 627.09282pt>
+File: figs_extracted/img_p3_1.png Graphic file (type png)
+<use figs_extracted/img_p3_1.png>
+Package pdftex.def Info: figs_extracted/img_p3_1.png  used on input line 89.
+(pdftex.def)             Requested size: 252.0pt x 136.6595pt.
+<figs_extracted/img_p3_2.png, id=12, 1127.71312pt x 639.13782pt>
+File: figs_extracted/img_p3_2.png Graphic file (type png)
+<use figs_extracted/img_p3_2.png>
+Package pdftex.def Info: figs_extracted/img_p3_2.png  used on input line 99.
+(pdftex.def)             Requested size: 252.0pt x 142.8148pt.
+ [2 <./figs_extracted/img_p3_0.png (PNG copy)> <./figs_extracted/img_p3_1.png (
+PNG copy)>]
+Underfull \vbox (badness 2134) has occurred while \output is active []
+
+
+Underfull \hbox (badness 1960) in paragraph at lines 165--166
+[]\OT1/ptm/m/n/10 The ex-per-i-men-tal eval-u-a-tion in-ves-ti-gates the pro-po
+sed
+ []
+
+[3 <./figs_extracted/img_p3_2.png (PNG copy)>]
+<figs_extracted/img_p5_0.png, id=29, 667.74469pt x 460.72125pt>
+File: figs_extracted/img_p5_0.png Graphic file (type png)
+<use figs_extracted/img_p5_0.png>
+Package pdftex.def Info: figs_extracted/img_p5_0.png  used on input line 194.
+(pdftex.def)             Requested size: 252.0pt x 173.86673pt.
+<figs_extracted/img_p6_0.png, id=30, 1155.56718pt x 770.88pt>
+File: figs_extracted/img_p6_0.png Graphic file (type png)
+<use figs_extracted/img_p6_0.png>
+Package pdftex.def Info: figs_extracted/img_p6_0.png  used on input line 230.
+(pdftex.def)             Requested size: 231.83954pt x 154.65553pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 236--237
+[]\OT1/ptm/m/n/10 Experimental re-sults demon-strate that in-cor-po-rat-ing
+ []
+
+
+Underfull \hbox (badness 5832) in paragraph at lines 236--237
+\OT1/ptm/m/n/10 or com-pu-ta-tion-ally in-ten-sive ap-proaches, the pro-posed
+ []
+
+
+Underfull \hbox (badness 1688) in paragraph at lines 238--239
+[]\OT1/ptm/m/n/10 Regional anal-y-sis demon-strated con-sis-tent per-for-mance
+ []
+
+[4 <./figs_extracted/img_p5_0.png (PNG copy)> <./figs_extracted/img_p6_0.png (P
+NG copy)>]
+Underfull \hbox (badness 2452) in paragraph at lines 281--282
+[]\OT1/ptm/m/n/8 M. Het-tich, ``ACNE04 dataset,'' Aug. 2019. [On-line]. Avail-a
+ble:
+ []
+
+
+** Conference Paper **
+Before submitting the final camera ready copy, remember to:
+
+ 1. Manually equalize the lengths of two columns on the last page
+ of your paper;
+
+ 2. Ensure that any PostScript and/or PDF output post-processing
+ uses only Type 1 fonts and that every step in the generation
+ process uses the appropriate paper size.
+
+[5] (cbeb_ieee_6page.aux)
+ ***********
+LaTeX2e <2023-11-01> patch level 1
+L3 programming layer <2024-01-04>
+ ***********
+ ) 
+Here is how much of TeX's memory you used:
+ 3623 strings out of 474486
+ 58929 string characters out of 5743755
+ 1947542 words of memory out of 5000000
+ 25893 multiletter control sequences out of 15000+600000
+ 594017 words of font info for 106 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 57i,9n,65p,1347b,254s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/
+cmex10.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/public/ams
+fonts/cm/cmmi10.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/p
+ublic/amsfonts/cm/cmmi7.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts
+/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKT
+eX/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/GonLu/AppData/Local/Progra
+ms/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/GonLu/AppData/Local
+/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/GonLu/AppD
+ata/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy6.pfb><C:/Users/Go
+nLu/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/
+Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8.
+pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/s
+ymbols/msbm10.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/urw
+/times/utmb8a.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/urw
+/times/utmbi8a.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/ur
+w/times/utmr8a.pfb><C:/Users/GonLu/AppData/Local/Programs/MiKTeX/fonts/type1/ur
+w/times/utmri8a.pfb>
+Output written on cbeb_ieee_6page.pdf (5 pages, 5400446 bytes).
+PDF statistics:
+ 99 PDF objects out of 1000 (max. 8388607)
+ 0 named destinations out of 1000 (max. 500000)
+ 26 words of extra memory for PDF output out of 10000 (max. 10000000)
+

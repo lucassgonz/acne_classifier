@@ -1,0 +1,3 @@
+Modelo,Acurácia,F1 Macro Avg,F1 Weighted Avg,Classe 0 F1,Classe 1 F1,Classe 2 F1,Classe 3 F1
+AcneNet,0.5524,0.61,0.55,0.53,0.51,0.71,0.67
+ResNet18,0.6573,0.74,0.65,0.6,0.63,0.88,0.86

@@ -1,0 +1,87 @@
+\relax 
+\citation{zaenglein2018acne,vallerand2018risk}
+\citation{hayashi2008grading,bhate2013epi}
+\citation{moreno2017teledermatology,tran2011mobile}
+\citation{shen2018acne,wu2019joint}
+\citation{nasr2016melanoma}
+\citation{brinker2019cnn,esteva2017dermatologist}
+\citation{tschandl2018ham10000,codella2018isic}
+\citation{wu2019joint,junayed2020acnenet}
+\citation{shen2018acne}
+\citation{thiboutot2009global,seite2019digital}
+\citation{bhate2013epi}
+\citation{sandler2018mobilenetv2,tan2019efficientnet}
+\citation{huang2017densenet}
+\citation{redmon2017yolo9000}
+\citation{dosovitskiy2021vit}
+\citation{selvaraju2017gradcam}
+\citation{byamba2015mobile,minagawa2021aiacne}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Deep Learning for Dermatological Image Analysis}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}Automated Acne Severity Assessment}{1}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Backbone Choices, Anatomical Context, and Open Gaps}{1}{}\protected@file@percent }
+\citation{hayashi2008grading}
+\citation{redmon2017yolo9000}
+\citation{huang2017densenet,sandler2018mobilenetv2}
+\citation{srivastava2014dropout,ioffe2015batchnorm}
+\citation{kingma2015adam}
+\citation{deng2009imagenet}
+\@writefile{toc}{\contentsline {section}{\numberline {III}Method}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Data and Region Crops}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}WithEmbed and NoEmbed Architectures}{2}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Ablation design used in this study: shared convolutional backbone with anatomical embeddings (WithEmbed) versus the same backbone without them (NoEmbed).}}{2}{}\protected@file@percent }
+\newlabel{fig:pipeline}{{1}{2}{}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces WithEmbed network: convolutional features concatenated with a 64-dimensional region embedding before the classification head.}}{2}{}\protected@file@percent }
+\newlabel{fig:arch}{{2}{2}{}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Training Protocol}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Evaluation Metrics}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Results}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Overall Ablation}{2}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Primary ablation on the held-out test set (1{,}090 crops).}}{3}{}\protected@file@percent }
+\newlabel{tab:ablation}{{I}{3}{}{table.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Accuracy and weighted F1 (\%) for NoEmbed trained from scratch versus WithEmbed.}}{3}{}\protected@file@percent }
+\newlabel{fig:overall}{{3}{3}{}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Region-wise Gains}{3}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Per-region weighted F1 and the corresponding embedding-induced gain in percentage points.}}{3}{}\protected@file@percent }
+\newlabel{fig:region}{{4}{3}{}{figure.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Weighted F1 by facial region.}}{3}{}\protected@file@percent }
+\newlabel{tab:regions}{{II}{3}{}{table.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Embedding Geometry and Transfer Check}{3}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Pairwise cosine similarity of the five learned anatomical embeddings.}}{3}{}\protected@file@percent }
+\newlabel{fig:sim}{{5}{3}{}{figure.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-D}}Mobile Feasibility Sketch}{3}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Conceptual mobile workflow in which the region-aware classifier could be embedded.}}{3}{}\protected@file@percent }
+\newlabel{fig:app}{{6}{3}{}{figure.6}{}}
+\bibcite{zaenglein2018acne}{1}
+\bibcite{vallerand2018risk}{2}
+\bibcite{hayashi2008grading}{3}
+\bibcite{bhate2013epi}{4}
+\bibcite{moreno2017teledermatology}{5}
+\bibcite{tran2011mobile}{6}
+\bibcite{shen2018acne}{7}
+\bibcite{wu2019joint}{8}
+\bibcite{nasr2016melanoma}{9}
+\bibcite{brinker2019cnn}{10}
+\bibcite{esteva2017dermatologist}{11}
+\bibcite{tschandl2018ham10000}{12}
+\bibcite{codella2018isic}{13}
+\bibcite{junayed2020acnenet}{14}
+\bibcite{thiboutot2009global}{15}
+\bibcite{seite2019digital}{16}
+\bibcite{sandler2018mobilenetv2}{17}
+\bibcite{tan2019efficientnet}{18}
+\bibcite{huang2017densenet}{19}
+\bibcite{redmon2017yolo9000}{20}
+\bibcite{dosovitskiy2021vit}{21}
+\bibcite{selvaraju2017gradcam}{22}
+\bibcite{byamba2015mobile}{23}
+\bibcite{minagawa2021aiacne}{24}
+\bibcite{kingma2015adam}{25}
+\bibcite{srivastava2014dropout}{26}
+\bibcite{ioffe2015batchnorm}{27}
+\bibcite{deng2009imagenet}{28}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Discussion and Limitations}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Conclusion}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{4}{}\protected@file@percent }
+\gdef \@abspage@last{4}

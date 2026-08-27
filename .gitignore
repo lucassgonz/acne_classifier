@@ -1,0 +1,56 @@
+# Ambientes virtuais
+training/acne-training/
+segment/segment_face/
+venv/
+.venv/
+env/
+
+# Datasets (muito grandes para o repositório)
+acne_1024/
+Dataset/
+data/
+data_test/
+
+# Modelos de backup e intermediários (manter apenas training/models/)
+training/models_backup/
+training/notebooks/*.pth
+training/notebooks/*.ptl
+backups/
+acnenet_modelo.zip
+
+# Modelos em papers (intermediários de experimentos)
+papers/sibgrapi/results/*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Flutter/Dart
+acne_classifier_app/.dart_tool/
+acne_classifier_app/.flutter-plugins
+acne_classifier_app/.flutter-plugins-dependencies
+acne_classifier_app/build/
+acne_classifier_app/android/local.properties
+
+# Papers intermediários
+papers/entrega_artigos.zip
+papers/*.docx
+_article_extract.txt
