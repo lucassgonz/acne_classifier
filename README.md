@@ -33,7 +33,9 @@ training/
   model.py                     Definição da arquitetura
   predict.py                   Script de inferência (linha de comando)
   run_ablation.py              Estudo de ablação: com vs. sem embedding de região
+  pretrain_backbone.py         Pré-treino do backbone no SCIN
   models/                      Pesos finais treinados (um por região)
+    backbone_scin_pretrained.pth  Backbone pré-treinado (gerado, opcional)
     resnet18_forehead_final.pth
     resnet18_nose_final.pth
     resnet18_chin_final.pth
@@ -48,6 +50,7 @@ training/
     train_focal_augment_earlystop.ipynb
   utils/                       Scripts de preparação de dados
     prepare_acne04_split.py    Split treino/val/teste (70/15/15) do ACNE04
+    prepare_scin_pretrain.py   Download/organização do SCIN p/ pré-treino
     augment_class_0_train.py
     augment_class_1_train.py
     augment_class_3_train.py
@@ -157,17 +160,26 @@ O split treino/val/teste é feito **antes** da segmentação, ao nível da image
    Execute o notebook `segment/yolo_train_and_segment_v2.ipynb` sobre `data/acne04_images/{train,val,test}/`, preservando os subdiretórios de split.
    Gera crops 224×224 em `data/final/{região}/{split}/{classe}/`.
 
-3. **Treinar o classificador**
+3. **(Opcional) Pré-treinar o backbone no SCIN**
+   O ACNE04 (1.406 imagens) é pequeno para treinar uma ResNet18 do zero. O [SCIN](https://github.com/google-research-datasets/scin) (Google Research/Stanford, licença SCIN Data Use License) fornece ~4.500 imagens dermatológicas rotuladas em 18 condições de pele, usadas só para pré-treinar o backbone — os 4 níveis de gravidade continuam vindo exclusivamente do ACNE04.
+   ```bash
+   python training/utils/prepare_scin_pretrain.py --output data/scin_pretrain --min-samples 30
+   python training/pretrain_backbone.py --data-dir data/scin_pretrain --epochs 15
+   ```
+   Gera `training/models/backbone_scin_pretrained.pth`.
+
+4. **Treinar o classificador**
    Execute `training/notebooks/ResNet18_SingleModel.ipynb`.  
    Salva o melhor modelo em `training/models/`.
 
-4. **Estudo de ablação (com vs. sem embedding de região)**
+5. **Estudo de ablação (com vs. sem embedding de região)**
    ```bash
-   python training/run_ablation.py --data-dir data/final --seeds 5
+   python training/run_ablation.py --data-dir data/final --seeds 5 \
+     --pretrained-backbone models/backbone_scin_pretrained.pth
    ```
-   Roda múltiplas seeds para cada configuração e reporta média ± desvio-padrão de accuracy e F1.
+   Roda múltiplas seeds para cada configuração e reporta média ± desvio-padrão de accuracy e F1. Omita `--pretrained-backbone` para treinar do zero (`weights=None`).
 
-5. **Avaliar resultados**
+6. **Avaliar resultados**
    Execute `training/notebooks/AcneNet_TrainAll_EvalTest.ipynb`.  
    Gera métricas em `training/results/`.
 

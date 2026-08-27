@@ -40,13 +40,21 @@ def get_device():
 # Modelos
 # ---------------------------------------------------------------------------
 
+def _load_backbone(pretrained_backbone_path):
+    """Cria um resnet18 e opcionalmente carrega backbone pré-treinado (ex: SCIN)."""
+    base = models.resnet18(weights=None)
+    if pretrained_backbone_path is not None:
+        state = torch.load(pretrained_backbone_path, map_location="cpu")
+        base.load_state_dict(state, strict=False)
+    return nn.Sequential(*list(base.children())[:-1])
+
+
 class ResNet18WithEmbed(nn.Module):
     """Modelo original do paper: ResNet-18 + embedding anatômico (64-d)."""
 
-    def __init__(self, num_classes=4, num_regions=5):
+    def __init__(self, num_classes=4, num_regions=5, pretrained_backbone_path=None):
         super().__init__()
-        base = models.resnet18(weights=None)
-        self.backbone = nn.Sequential(*list(base.children())[:-1])
+        self.backbone = _load_backbone(pretrained_backbone_path)
         in_features = 512
         self.region_embed = nn.Embedding(num_regions, 64)
         self.classifier = nn.Sequential(
@@ -71,10 +79,9 @@ class ResNet18WithEmbed(nn.Module):
 class ResNet18NoEmbed(nn.Module):
     """Baseline de ablação: mesma arquitetura sem embedding de região."""
 
-    def __init__(self, num_classes=4):
+    def __init__(self, num_classes=4, pretrained_backbone_path=None):
         super().__init__()
-        base = models.resnet18(weights=None)
-        self.backbone = nn.Sequential(*list(base.children())[:-1])
+        self.backbone = _load_backbone(pretrained_backbone_path)
         in_features = 512
         self.classifier = nn.Sequential(
             nn.Dropout(0.3),
@@ -227,6 +234,8 @@ def main():
     parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--output", default="results/ablation_results.json")
+    parser.add_argument("--pretrained-backbone", default=None,
+                        help="Caminho para backbone pré-treinado (ex: models/backbone_scin_pretrained.pth)")
     args = parser.parse_args()
 
     device = get_device()
@@ -260,7 +269,9 @@ def main():
             set_seed(seed)
 
             model = (
-                ResNet18WithEmbed().to(device) if use_embed else ResNet18NoEmbed().to(device)
+                ResNet18WithEmbed(pretrained_backbone_path=args.pretrained_backbone).to(device)
+                if use_embed
+                else ResNet18NoEmbed(pretrained_backbone_path=args.pretrained_backbone).to(device)
             )
             acc, f1 = train_model(
                 model, train_loader, val_loader, test_loader,

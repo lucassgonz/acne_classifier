@@ -4,11 +4,15 @@ from torchvision import models
 
 
 class OptimizedMultiRegionResNet18(nn.Module):
-    def __init__(self, num_classes=4, num_regions=5):
+    def __init__(self, num_classes=4, num_regions=5, pretrained_backbone_path=None):
         super().__init__()
         self.resnet = models.resnet18(weights=None)
         in_features = self.resnet.fc.in_features
         self.resnet.fc = nn.Identity()
+
+        if pretrained_backbone_path is not None:
+            state = torch.load(pretrained_backbone_path, map_location="cpu")
+            self.resnet.load_state_dict(state, strict=False)
         self.region_embed = nn.Embedding(num_regions, 64)
         self.classifier = nn.Sequential(
             nn.Dropout(0.3),
