@@ -32,6 +32,7 @@ A classe `OptimizedMultiRegionResNet18` está definida em [`training/model.py`](
 training/
   model.py                     Definição da arquitetura
   predict.py                   Script de inferência (linha de comando)
+  run_ablation.py              Estudo de ablação: com vs. sem embedding de região
   models/                      Pesos finais treinados (um por região)
     resnet18_forehead_final.pth
     resnet18_nose_final.pth
@@ -46,8 +47,7 @@ training/
     ResNet18_Comparison_Training.ipynb
     train_focal_augment_earlystop.ipynb
   utils/                       Scripts de preparação de dados
-    prepare_dataset.py
-    distribute_unique_split.py
+    prepare_acne04_split.py    Split treino/val/teste (70/15/15) do ACNE04
     augment_class_0_train.py
     augment_class_1_train.py
     augment_class_3_train.py
@@ -64,20 +64,25 @@ papers/                            Artigos científicos (CBEB 2026, SIBGRAPI 202
 images/                            Figuras de documentação
 ```
 
-> Os datasets originais (Acne1024, ACNE04) não estão incluídos por tamanho. Para re-treinar, baixe os dados e siga o pipeline abaixo.
+> O dataset original (ACNE04) não está incluído por tamanho. Para re-treinar, baixe os dados e siga o pipeline abaixo.
 
 ---
 
 ## Requisitos de Hardware
 
-- GPU NVIDIA com CUDA 12.1 (testado na RTX 4070)
+- **GPU NVIDIA** com CUDA 12.1, ou
+- **Apple Silicon** (M1 ou superior) via backend MPS do PyTorch
 - Python 3.10+
+
+O código detecta o dispositivo automaticamente (`cuda` → `mps` → `cpu`).
 
 ---
 
 ## Configuração do Ambiente
 
 ### 1. Inferência e Treinamento
+
+**GPU NVIDIA (CUDA):**
 
 ```bash
 python -m venv venv
@@ -88,6 +93,14 @@ venv\Scripts\activate
 source venv/bin/activate
 
 pip install -r training/requirements_training.txt
+```
+
+**Apple Silicon (MPS):**
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r training/requirements_mps.txt
 ```
 
 ### 2. Segmentação facial (YOLOv8)
@@ -133,25 +146,26 @@ O script detecta GPU automaticamente. Sem GPU, roda em CPU.
 
 ## Pipeline de Treinamento (do zero)
 
-1. **Consolidar dados brutos**
+O split treino/val/teste é feito **antes** da segmentação, ao nível da imagem original — assim todos os crops regionais de uma mesma foto ficam no mesmo split, sem vazamento de dados.
+
+1. **Dividir o ACNE04 em treino/val/teste (70/15/15)**
    ```bash
-   python training/utils/prepare_dataset.py
+   python training/utils/prepare_acne04_split.py --acne04 acne_1024 --output data/acne04_images
    ```
-   Copia imagens dos datasets originais para `data/raw/`.
 
 2. **Segmentar regiões faciais**
-   Execute o notebook `segment/yolo_train_and_segment_v2.ipynb`.  
-   Gera crops 224×224 em `data/crops/{região}/`.
+   Execute o notebook `segment/yolo_train_and_segment_v2.ipynb` sobre `data/acne04_images/{train,val,test}/`, preservando os subdiretórios de split.
+   Gera crops 224×224 em `data/final/{região}/{split}/{classe}/`.
 
-3. **Dividir por gravidade (train/val/test)**
-   ```bash
-   python training/utils/distribute_unique_split.py
-   ```
-   Organiza em `data/final/{região}/{split}/{classe}/`.
-
-4. **Treinar o classificador**
+3. **Treinar o classificador**
    Execute `training/notebooks/ResNet18_SingleModel.ipynb`.  
    Salva o melhor modelo em `training/models/`.
+
+4. **Estudo de ablação (com vs. sem embedding de região)**
+   ```bash
+   python training/run_ablation.py --data-dir data/final --seeds 5
+   ```
+   Roda múltiplas seeds para cada configuração e reporta média ± desvio-padrão de accuracy e F1.
 
 5. **Avaliar resultados**
    Execute `training/notebooks/AcneNet_TrainAll_EvalTest.ipynb`.  
