@@ -274,6 +274,8 @@ def main():
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--loss", choices=["weighted_ce", "focal"], default="weighted_ce")
+    parser.add_argument("--only-config", choices=["with_embedding", "no_embedding"], default=None,
+                        help="Roda apenas essa configuracao (pula a outra). Util para gerar checkpoints de um unico modelo.")
     parser.add_argument("--output", default="results/ablation_results.json")
     parser.add_argument("--pretrained-backbone", default=None,
                         help="Caminho para backbone pré-treinado (ex: models/backbone_scin_pretrained.pth)")
@@ -315,8 +317,14 @@ def main():
     else:
         results = {"with_embedding": [], "no_embedding": []}
 
+    configs = [True, False]
+    if args.only_config == "with_embedding":
+        configs = [True]
+    elif args.only_config == "no_embedding":
+        configs = [False]
+
     for seed in seeds:
-        for use_embed in [True, False]:
+        for use_embed in configs:
             tag = "with_embedding" if use_embed else "no_embedding"
 
             if any(r["seed"] == seed for r in results[tag]):
