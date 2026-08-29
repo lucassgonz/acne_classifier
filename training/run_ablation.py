@@ -148,16 +148,27 @@ class AcneDataset(Dataset):
         return img, label, torch.tensor(region_idx)
 
 
-def build_transforms():
-    train_tf = transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(25),
-        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
-        transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
-        transforms.ToTensor(),
-        transforms.RandomErasing(p=0.2),
-    ])
+def build_transforms(strong_aug=False):
+    if strong_aug:
+        train_tf = transforms.Compose([
+            transforms.RandomResizedCrop(224, scale=(0.75, 1.0), ratio=(0.9, 1.1)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(25),
+            transforms.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.05),
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+            transforms.ToTensor(),
+            transforms.RandomErasing(p=0.3, scale=(0.02, 0.15)),
+        ])
+    else:
+        train_tf = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(25),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),
+            transforms.ToTensor(),
+            transforms.RandomErasing(p=0.2),
+        ])
     val_tf = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
@@ -298,6 +309,8 @@ def main():
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--loss", choices=["weighted_ce", "focal"], default="weighted_ce")
     parser.add_argument("--arch", choices=["resnet18", "resnet34"], default="resnet18")
+    parser.add_argument("--strong-aug", action="store_true",
+                        help="Usa augmentation mais forte (RandomResizedCrop, jitter/erasing mais agressivos)")
     parser.add_argument("--oversample", action="store_true",
                         help="Usa WeightedRandomSampler para reamostrar classes minoritarias no treino (em vez de so pesar a loss)")
     parser.add_argument("--only-config", choices=["with_embedding", "no_embedding"], default=None,
@@ -314,7 +327,7 @@ def main():
     device = get_device()
     print(f"Device: {device}")
 
-    train_tf, val_tf = build_transforms()
+    train_tf, val_tf = build_transforms(strong_aug=args.strong_aug)
 
     train_ds = AcneDataset(args.data_dir, ["train"], train_tf)
     val_ds = AcneDataset(args.data_dir, ["val"], val_tf)
