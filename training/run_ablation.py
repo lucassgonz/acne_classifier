@@ -195,14 +195,31 @@ def set_seed(seed):
         torch.cuda.manual_seed_all(seed)
 
 
-def train_one_epoch(model, loader, criterion, optimizer, device):
+def train_one_epoch(model, loader, criterion, optimizer, device, mixup_alpha=0.0):
+    """
+    mixup_alpha > 0 ativa Mixup (Zhang et al., 2018): mistura pares de
+    imagens do batch com peso lambda~Beta(alpha,alpha) e treina com a
+    combinacao convexa das duas losses. Ajuda a regularizar em datasets
+    pequenos/desbalanceados. O indice de regiao usado no forward eh o da
+    imagem "primaria" (x) -- aproximacao padrao para entradas discretas
+    auxiliares sob mixup.
+    """
     model.train()
     total_loss = 0.0
     for imgs, labels, regions in loader:
         imgs, labels, regions = imgs.to(device), labels.to(device), regions.to(device)
         optimizer.zero_grad()
-        out = model(imgs, regions)
-        loss = criterion(out, labels)
+
+        if mixup_alpha > 0:
+            lam = float(np.random.beta(mixup_alpha, mixup_alpha))
+            perm = torch.randperm(imgs.size(0), device=device)
+            mixed_imgs = lam * imgs + (1 - lam) * imgs[perm]
+            out = model(mixed_imgs, regions)
+            loss = lam * criterion(out, labels) + (1 - lam) * criterion(out, labels[perm])
+        else:
+            out = model(imgs, regions)
+            loss = criterion(out, labels)
+
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
@@ -227,7 +244,7 @@ def evaluate(model, loader, device):
 
 def train_model(model, train_loader, val_loader, test_loader,
                 class_weights, device, num_epochs=40, patience=10, weight_decay=1e-4,
-                loss_type="weighted_ce"):
+                loss_type="weighted_ce", mixup_alpha=0.0):
     if loss_type == "focal":
         criterion = FocalLoss(weight=class_weights.to(device), gamma=2.0)
     else:
@@ -242,7 +259,7 @@ def train_model(model, train_loader, val_loader, test_loader,
     patience_counter = 0
 
     for epoch in range(1, num_epochs + 1):
-        train_one_epoch(model, train_loader, criterion, optimizer, device)
+        train_one_epoch(model, train_loader, criterion, optimizer, device, mixup_alpha=mixup_alpha)
         val_acc, val_f1, val_qwk = evaluate(model, val_loader, device)
         scheduler.step(val_acc)
 
@@ -277,6 +294,8 @@ def main():
     parser.add_argument("--only-config", choices=["with_embedding", "no_embedding"], default=None,
                         help="Roda apenas essa configuracao (pula a outra). Util para gerar checkpoints de um unico modelo.")
     parser.add_argument("--output", default="results/ablation_results.json")
+    parser.add_argument("--mixup-alpha", type=float, default=0.0,
+                        help="Ativa Mixup com esse alpha (ex: 0.2). 0 desativa (padrao).")
     parser.add_argument("--pretrained-backbone", default=None,
                         help="Caminho para backbone pré-treinado (ex: models/backbone_scin_pretrained.pth)")
     parser.add_argument("--save-models-dir", default=None,
@@ -345,6 +364,7 @@ def main():
                 num_epochs=args.epochs,
                 weight_decay=args.weight_decay,
                 loss_type=args.loss,
+                mixup_alpha=args.mixup_alpha,
             )
             results[tag].append({"seed": seed, "accuracy": acc, "f1_weighted": f1, "qwk": qwk})
             print(f"  Test Acc={acc:.4f}  F1={f1:.4f}  QWK={qwk:.4f}", flush=True)
