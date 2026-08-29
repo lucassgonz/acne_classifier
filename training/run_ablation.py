@@ -9,6 +9,7 @@ Uso:
     python run_ablation.py --data-dir ../../data/final --seeds 3
 """
 import argparse
+import gc
 import os
 import random
 import json
@@ -20,7 +21,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import datasets, transforms, models
 from sklearn.utils.class_weight import compute_class_weight
-from sklearn.metrics import f1_score, accuracy_score
+from sklearn.metrics import f1_score, accuracy_score, cohen_kappa_score
 from tqdm import tqdm
 
 
@@ -41,11 +42,18 @@ def get_device():
 # ---------------------------------------------------------------------------
 
 def _load_backbone(pretrained_backbone_path):
-    """Cria um resnet18 e opcionalmente carrega backbone pré-treinado (ex: SCIN)."""
-    base = models.resnet18(weights=None)
+    """
+    Cria um resnet18. Se pretrained_backbone_path for informado, carrega o
+    backbone pré-treinado (ex: SCIN, que já parte de ImageNet). Caso
+    contrário, usa pesos ImageNet como ponto de partida padrão — treinar do
+    zero (weights=None) é inadequado para um dataset do tamanho do ACNE04.
+    """
     if pretrained_backbone_path is not None:
+        base = models.resnet18(weights=None)
         state = torch.load(pretrained_backbone_path, map_location="cpu")
         base.load_state_dict(state, strict=False)
+    else:
+        base = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
     return nn.Sequential(*list(base.children())[:-1])
 
 
@@ -152,6 +160,30 @@ def build_transforms():
 
 
 # ---------------------------------------------------------------------------
+# Loss
+# ---------------------------------------------------------------------------
+
+class FocalLoss(nn.Module):
+    """
+    Focal Loss (Lin et al., 2017) com pesos por classe. Reduz a contribuicao
+    de exemplos faceis (bem classificados) na loss, focando o treino nas
+    classes minoritarias/dificeis -- relevante aqui pela forte imbalance
+    entre niveis de gravidade (ex: nivel 3 tem poucas amostras).
+    """
+
+    def __init__(self, weight=None, gamma=2.0):
+        super().__init__()
+        self.weight = weight
+        self.gamma = gamma
+
+    def forward(self, logits, targets):
+        ce = nn.functional.cross_entropy(logits, targets, weight=self.weight, reduction="none")
+        pt = torch.exp(-ce)
+        focal = ((1 - pt) ** self.gamma) * ce
+        return focal.mean()
+
+
+# ---------------------------------------------------------------------------
 # Treino / Avaliação
 # ---------------------------------------------------------------------------
 
@@ -189,13 +221,18 @@ def evaluate(model, loader, device):
         all_labels.extend(labels.cpu().numpy())
     acc = accuracy_score(all_labels, all_preds)
     f1 = f1_score(all_labels, all_preds, average="weighted", zero_division=0)
-    return acc, f1
+    qwk = cohen_kappa_score(all_labels, all_preds, weights="quadratic")
+    return acc, f1, qwk
 
 
 def train_model(model, train_loader, val_loader, test_loader,
-                class_weights, device, num_epochs=40, patience=10):
-    criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+                class_weights, device, num_epochs=40, patience=10, weight_decay=1e-4,
+                loss_type="weighted_ce"):
+    if loss_type == "focal":
+        criterion = FocalLoss(weight=class_weights.to(device), gamma=2.0)
+    else:
+        criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", factor=0.5, patience=5
     )
@@ -206,7 +243,7 @@ def train_model(model, train_loader, val_loader, test_loader,
 
     for epoch in range(1, num_epochs + 1):
         train_one_epoch(model, train_loader, criterion, optimizer, device)
-        val_acc, val_f1 = evaluate(model, val_loader, device)
+        val_acc, val_f1, val_qwk = evaluate(model, val_loader, device)
         scheduler.step(val_acc)
 
         if val_acc > best_val_acc:
@@ -219,8 +256,8 @@ def train_model(model, train_loader, val_loader, test_loader,
                 break
 
     model.load_state_dict(best_state)
-    test_acc, test_f1 = evaluate(model, test_loader, device)
-    return test_acc, test_f1
+    test_acc, test_f1, test_qwk = evaluate(model, test_loader, device)
+    return test_acc, test_f1, test_qwk, best_state
 
 
 # ---------------------------------------------------------------------------
@@ -231,11 +268,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="../../data/final")
     parser.add_argument("--seeds", type=int, default=3)
+    parser.add_argument("--seed", type=int, default=None,
+                        help="Roda apenas esta seed (ignora --seeds). Usado para isolar cada rodada em processo separado.")
     parser.add_argument("--epochs", type=int, default=40)
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--loss", choices=["weighted_ce", "focal"], default="weighted_ce")
     parser.add_argument("--output", default="results/ablation_results.json")
     parser.add_argument("--pretrained-backbone", default=None,
                         help="Caminho para backbone pré-treinado (ex: models/backbone_scin_pretrained.pth)")
+    parser.add_argument("--save-models-dir", default=None,
+                        help="Se informado, salva o state_dict de cada modelo treinado (por seed/config) nesse diretorio, para uso posterior em ensemble/TTA.")
     args = parser.parse_args()
 
     device = get_device()
@@ -249,9 +292,9 @@ def main():
 
     print(f"Train: {len(train_ds)} | Val: {len(val_ds)} | Test: {len(test_ds)} crops")
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=2, pin_memory=False)
-    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=False)
-    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=2, pin_memory=False)
+    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
+    val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
+    test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
 
     all_labels_train = [s[1] for s in train_ds.samples]
     class_weights = torch.tensor(
@@ -259,13 +302,28 @@ def main():
         dtype=torch.float,
     )
 
-    seeds = list(range(42, 42 + args.seeds))
-    results = {"with_embedding": [], "no_embedding": []}
+    if args.seed is not None:
+        seeds = [args.seed]
+    else:
+        seeds = list(range(42, 42 + args.seeds))
+
+    # Continua um arquivo de resultados existente (util quando cada seed
+    # roda em um processo separado via --seed)
+    if os.path.exists(args.output):
+        with open(args.output) as f:
+            results = json.load(f)
+    else:
+        results = {"with_embedding": [], "no_embedding": []}
 
     for seed in seeds:
         for use_embed in [True, False]:
             tag = "with_embedding" if use_embed else "no_embedding"
-            print(f"\n[seed={seed}] {tag}")
+
+            if any(r["seed"] == seed for r in results[tag]):
+                print(f"\n[seed={seed}] {tag} -- ja concluida, pulando")
+                continue
+
+            print(f"\n[seed={seed}] {tag}", flush=True)
             set_seed(seed)
 
             model = (
@@ -273,13 +331,33 @@ def main():
                 if use_embed
                 else ResNet18NoEmbed(pretrained_backbone_path=args.pretrained_backbone).to(device)
             )
-            acc, f1 = train_model(
+            acc, f1, qwk, best_state = train_model(
                 model, train_loader, val_loader, test_loader,
                 class_weights, device,
                 num_epochs=args.epochs,
+                weight_decay=args.weight_decay,
+                loss_type=args.loss,
             )
-            results[tag].append({"seed": seed, "accuracy": acc, "f1_weighted": f1})
-            print(f"  Test Acc={acc:.4f}  F1={f1:.4f}")
+            results[tag].append({"seed": seed, "accuracy": acc, "f1_weighted": f1, "qwk": qwk})
+            print(f"  Test Acc={acc:.4f}  F1={f1:.4f}  QWK={qwk:.4f}", flush=True)
+
+            if args.save_models_dir:
+                os.makedirs(args.save_models_dir, exist_ok=True)
+                ckpt_path = os.path.join(args.save_models_dir, f"{tag}_seed{seed}.pth")
+                torch.save(best_state, ckpt_path)
+
+            # Libera memoria do modelo/otimizador antes da proxima rodada
+            del model, best_state
+            gc.collect()
+            if device.type == "mps":
+                torch.mps.empty_cache()
+            elif device.type == "cuda":
+                torch.cuda.empty_cache()
+
+            # Salva progresso parcial a cada rodada (protege contra queda de memoria/energia)
+            os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
 
     # Summary
     print("\n" + "=" * 50)
@@ -288,9 +366,11 @@ def main():
     for tag, runs in results.items():
         accs = [r["accuracy"] for r in runs]
         f1s = [r["f1_weighted"] for r in runs]
+        qwks = [r.get("qwk", float("nan")) for r in runs]
         print(f"\n{tag}:")
         print(f"  Accuracy : {np.mean(accs):.4f} ± {np.std(accs):.4f}")
         print(f"  F1-score : {np.mean(f1s):.4f} ± {np.std(f1s):.4f}")
+        print(f"  QWK      : {np.mean(qwks):.4f} ± {np.std(qwks):.4f}")
 
     os.makedirs(os.path.dirname(args.output) or ".", exist_ok=True)
     with open(args.output, "w") as f:
