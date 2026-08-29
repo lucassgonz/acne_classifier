@@ -318,16 +318,18 @@ def main():
     all_labels_train = [s[1] for s in train_ds.samples]
 
     if args.oversample:
-        # Reamostragem: cada classe tem a mesma probabilidade de ser sorteada
-        # por epoca, independente da frequencia original. Combinada com loss
-        # SEM peso extra, para nao corrigir o desbalanceamento duas vezes.
+        # Reamostragem MODERADA: usa 1/sqrt(freq) em vez de 1/freq, para nao
+        # superrepresentar demais classes com pouquissimas amostras (ex: 21
+        # imagens do nivel 3), o que causou overfitting na versao agressiva.
+        # Mantem tambem peso parcial na loss (sqrt dos pesos balanceados).
         class_counts = np.bincount(all_labels_train)
-        sample_weights = [1.0 / class_counts[label] for label in all_labels_train]
+        sample_weights = [1.0 / np.sqrt(class_counts[label]) for label in all_labels_train]
         sampler = torch.utils.data.WeightedRandomSampler(
             sample_weights, num_samples=len(sample_weights), replacement=True
         )
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, sampler=sampler, num_workers=0, pin_memory=False)
-        class_weights = torch.ones(len(class_counts), dtype=torch.float)
+        balanced_weights = compute_class_weight("balanced", classes=np.unique(all_labels_train), y=all_labels_train)
+        class_weights = torch.tensor(np.sqrt(balanced_weights), dtype=torch.float)
     else:
         train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
         class_weights = torch.tensor(
