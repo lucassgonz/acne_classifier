@@ -151,7 +151,7 @@ class AcneDataset(Dataset):
 def build_transforms(strong_aug=False):
     if strong_aug:
         train_tf = transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0.75, 1.0), ratio=(0.9, 1.1)),
+            transforms.RandomResizedCrop(224, scale=(0.85, 1.0), ratio=(0.95, 1.05)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(25),
             transforms.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.05),
