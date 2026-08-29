@@ -21,6 +21,7 @@ acnenet_modelo.zip
 # Checkpoints intermediarios de ablacao/ensemble (grandes, nao sao o modelo final)
 training/models/ablation_ckpt/
 training/models/ablation_ckpt_mixup/
+training/models/ablation_ckpt_coral/
 training/models/backbone_scin_pretrained.pth
 training/models/backbone_scin_pretrained_v2.pth
 
