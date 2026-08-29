@@ -291,6 +291,8 @@ def main():
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--loss", choices=["weighted_ce", "focal"], default="weighted_ce")
+    parser.add_argument("--oversample", action="store_true",
+                        help="Usa WeightedRandomSampler para reamostrar classes minoritarias no treino (em vez de so pesar a loss)")
     parser.add_argument("--only-config", choices=["with_embedding", "no_embedding"], default=None,
                         help="Roda apenas essa configuracao (pula a outra). Util para gerar checkpoints de um unico modelo.")
     parser.add_argument("--output", default="results/ablation_results.json")
@@ -313,15 +315,28 @@ def main():
 
     print(f"Train: {len(train_ds)} | Val: {len(val_ds)} | Test: {len(test_ds)} crops")
 
-    train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
+    all_labels_train = [s[1] for s in train_ds.samples]
+
+    if args.oversample:
+        # Reamostragem: cada classe tem a mesma probabilidade de ser sorteada
+        # por epoca, independente da frequencia original. Combinada com loss
+        # SEM peso extra, para nao corrigir o desbalanceamento duas vezes.
+        class_counts = np.bincount(all_labels_train)
+        sample_weights = [1.0 / class_counts[label] for label in all_labels_train]
+        sampler = torch.utils.data.WeightedRandomSampler(
+            sample_weights, num_samples=len(sample_weights), replacement=True
+        )
+        train_loader = DataLoader(train_ds, batch_size=args.batch_size, sampler=sampler, num_workers=0, pin_memory=False)
+        class_weights = torch.ones(len(class_counts), dtype=torch.float)
+    else:
+        train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
+        class_weights = torch.tensor(
+            compute_class_weight("balanced", classes=np.unique(all_labels_train), y=all_labels_train),
+            dtype=torch.float,
+        )
+
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
     test_loader = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=0, pin_memory=False)
-
-    all_labels_train = [s[1] for s in train_ds.samples]
-    class_weights = torch.tensor(
-        compute_class_weight("balanced", classes=np.unique(all_labels_train), y=all_labels_train),
-        dtype=torch.float,
-    )
 
     if args.seed is not None:
         seeds = [args.seed]
