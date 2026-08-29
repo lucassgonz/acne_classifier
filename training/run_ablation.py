@@ -41,29 +41,35 @@ def get_device():
 # Modelos
 # ---------------------------------------------------------------------------
 
-def _load_backbone(pretrained_backbone_path):
+BACKBONE_OUT_FEATURES = {"resnet18": 512, "resnet34": 512}
+
+
+def _load_backbone(pretrained_backbone_path, arch="resnet18"):
     """
-    Cria um resnet18. Se pretrained_backbone_path for informado, carrega o
-    backbone pré-treinado (ex: SCIN, que já parte de ImageNet). Caso
-    contrário, usa pesos ImageNet como ponto de partida padrão — treinar do
-    zero (weights=None) é inadequado para um dataset do tamanho do ACNE04.
+    Cria um resnet18/resnet34. Se pretrained_backbone_path for informado,
+    carrega o backbone pré-treinado (ex: SCIN, que já parte de ImageNet).
+    Caso contrário, usa pesos ImageNet como ponto de partida padrão —
+    treinar do zero (weights=None) é inadequado para um dataset do
+    tamanho do ACNE04.
     """
+    ctor = models.resnet18 if arch == "resnet18" else models.resnet34
+    weights_enum = models.ResNet18_Weights if arch == "resnet18" else models.ResNet34_Weights
     if pretrained_backbone_path is not None:
-        base = models.resnet18(weights=None)
+        base = ctor(weights=None)
         state = torch.load(pretrained_backbone_path, map_location="cpu")
         base.load_state_dict(state, strict=False)
     else:
-        base = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        base = ctor(weights=weights_enum.DEFAULT)
     return nn.Sequential(*list(base.children())[:-1])
 
 
 class ResNet18WithEmbed(nn.Module):
     """Modelo original do paper: ResNet-18 + embedding anatômico (64-d)."""
 
-    def __init__(self, num_classes=4, num_regions=5, pretrained_backbone_path=None):
+    def __init__(self, num_classes=4, num_regions=5, pretrained_backbone_path=None, arch="resnet18"):
         super().__init__()
-        self.backbone = _load_backbone(pretrained_backbone_path)
-        in_features = 512
+        self.backbone = _load_backbone(pretrained_backbone_path, arch=arch)
+        in_features = BACKBONE_OUT_FEATURES[arch]
         self.region_embed = nn.Embedding(num_regions, 64)
         self.classifier = nn.Sequential(
             nn.Dropout(0.3),
@@ -87,10 +93,10 @@ class ResNet18WithEmbed(nn.Module):
 class ResNet18NoEmbed(nn.Module):
     """Baseline de ablação: mesma arquitetura sem embedding de região."""
 
-    def __init__(self, num_classes=4, pretrained_backbone_path=None):
+    def __init__(self, num_classes=4, pretrained_backbone_path=None, arch="resnet18"):
         super().__init__()
-        self.backbone = _load_backbone(pretrained_backbone_path)
-        in_features = 512
+        self.backbone = _load_backbone(pretrained_backbone_path, arch=arch)
+        in_features = BACKBONE_OUT_FEATURES[arch]
         self.classifier = nn.Sequential(
             nn.Dropout(0.3),
             nn.Linear(in_features, 256),
@@ -291,6 +297,7 @@ def main():
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--loss", choices=["weighted_ce", "focal"], default="weighted_ce")
+    parser.add_argument("--arch", choices=["resnet18", "resnet34"], default="resnet18")
     parser.add_argument("--oversample", action="store_true",
                         help="Usa WeightedRandomSampler para reamostrar classes minoritarias no treino (em vez de so pesar a loss)")
     parser.add_argument("--only-config", choices=["with_embedding", "no_embedding"], default=None,
@@ -371,9 +378,9 @@ def main():
             set_seed(seed)
 
             model = (
-                ResNet18WithEmbed(pretrained_backbone_path=args.pretrained_backbone).to(device)
+                ResNet18WithEmbed(pretrained_backbone_path=args.pretrained_backbone, arch=args.arch).to(device)
                 if use_embed
-                else ResNet18NoEmbed(pretrained_backbone_path=args.pretrained_backbone).to(device)
+                else ResNet18NoEmbed(pretrained_backbone_path=args.pretrained_backbone, arch=args.arch).to(device)
             )
             acc, f1, qwk, best_state = train_model(
                 model, train_loader, val_loader, test_loader,
