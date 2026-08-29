@@ -56,8 +56,19 @@ def set_seed(seed):
 # ---------------------------------------------------------------------------
 
 class CoralResNet18WithEmbed(nn.Module):
+    """
+    CORAL com garantia de rank-consistency: os limiares (bias) sao
+    parametrizados como uma sequencia estritamente decrescente
+    (b_0 > b_1 > ... > b_{K-2}), obtida subtraindo incrementos sempre
+    positivos (softplus) do primeiro limiar. Isso e o que garante que
+    P(y>0) >= P(y>1) >= ... -- sem essa restricao, o CORAL "quebra" e as
+    predicoes ficam inconsistentes (o que causou o resultado ruim da
+    primeira tentativa).
+    """
+
     def __init__(self, num_classes=4, num_regions=5, pretrained_backbone_path=None):
         super().__init__()
+        self.num_thresholds = num_classes - 1
         self.backbone = _load_backbone(pretrained_backbone_path)
         in_features = 512
         self.region_embed = nn.Embedding(num_regions, 64)
@@ -72,15 +83,23 @@ class CoralResNet18WithEmbed(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.1),
         )
-        # Camada CORAL: um unico peso compartilhado + (num_classes-1) bias independentes
         self.coral_weight = nn.Linear(128, 1, bias=False)
-        self.coral_bias = nn.Parameter(torch.zeros(num_classes - 1).float())
+        # bias_raw[0] = limiar inicial (livre); bias_raw[1:] = incrementos
+        # (sempre positivos via softplus) subtraidos em cascata
+        self.bias_raw = nn.Parameter(torch.zeros(self.num_thresholds).float())
+
+    def ordered_bias(self):
+        first = self.bias_raw[0:1]
+        increments = F.softplus(self.bias_raw[1:])
+        decreases = torch.cumsum(increments, dim=0)
+        rest = first - decreases
+        return torch.cat([first, rest], dim=0)
 
     def forward(self, x, region_idx):
         feat = self.backbone(x).flatten(1)
         emb = self.region_embed(region_idx.long()).squeeze(1)
         h = self.feature_head(torch.cat([feat, emb], dim=1))
-        return self.coral_weight(h) + self.coral_bias  # [batch, num_classes-1]
+        return self.coral_weight(h) + self.ordered_bias()  # [batch, num_classes-1]
 
 
 # ---------------------------------------------------------------------------
@@ -158,7 +177,20 @@ def train_one_epoch(model, loader, optimizer, device, num_classes, mixup_alpha=0
 
 def train_model(model, train_loader, val_loader, test_loader, device,
                 num_classes=4, num_epochs=40, patience=10, weight_decay=1e-4, mixup_alpha=0.0):
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=weight_decay)
+    # bias_raw define a separacao entre os niveis de gravidade -- weight
+    # decay puxaria esses valores para zero e colapsaria os limiares,
+    # entao ele (e demais bias/BatchNorm) fica de fora da regularizacao.
+    decay_params, no_decay_params = [], []
+    for name, param in model.named_parameters():
+        if "bias_raw" in name or "bias" in name or "bn" in name.lower():
+            no_decay_params.append(param)
+        else:
+            decay_params.append(param)
+
+    optimizer = torch.optim.Adam([
+        {"params": decay_params, "weight_decay": weight_decay},
+        {"params": no_decay_params, "weight_decay": 0.0},
+    ], lr=1e-4)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="max", factor=0.5, patience=5)
 
     best_val_acc = 0.0
