@@ -28,3 +28,8 @@ requests>=2.32.0
 # Jupyter (opcional, para rodar notebooks)
 ipykernel>=6.29.0
 jupyterlab>=4.2.0
+
+# NOTA: mediapipe==0.10.14 (usado em utils/segment_faces_mediapipe.py) forca
+# upgrade do numpy para >=2.0, o que quebra o ColorJitter do torchvision
+# (OverflowError no hue). Instale mediapipe SEPARADO, rode a segmentacao,
+# e reinstale "numpy<2.0,>=1.26.0" antes de voltar a treinar.
