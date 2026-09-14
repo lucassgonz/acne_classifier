@@ -42,6 +42,29 @@ def split_images(annotations_dir, val_ratio=0.15, test_ratio=0.15, seed=42):
     return splits
 
 
+def clear_previous_manual_crops(final_dir):
+    """Remove todo crop manual_* de final_dir antes de mesclar de novo.
+
+    Sem isso, rodar este script mais de uma vez (ex: apos anotar uma nova
+    leva de imagens) recalcula o split 70/15/15 em cima de um pool maior,
+    o que pode mover uma imagem de split -- mas a copia antiga, de um split
+    diferente, nunca era removida, entao a MESMA imagem acabava presente em
+    treino e teste ao mesmo tempo (vazamento de dado real, ja detectado).
+    """
+    removed = 0
+    for region in REGIONS:
+        for split in ["train", "val", "test"]:
+            for cls in ["0", "1", "2", "3"]:
+                d = os.path.join(final_dir, region, split, cls)
+                if not os.path.isdir(d):
+                    continue
+                for fn in os.listdir(d):
+                    if fn.startswith("manual_"):
+                        os.remove(os.path.join(d, fn))
+                        removed += 1
+    return removed
+
+
 def merge_crops(splits, crops_dir, final_dir):
     stats = {"train": 0, "val": 0, "test": 0}
     missing_region_crops = 0
@@ -76,7 +99,10 @@ def main():
     for split_name, items in splits.items():
         print(f"  {split_name}: {len(items)} imagens")
 
-    print("\nFundindo crops com data/final/...")
+    removed = clear_previous_manual_crops(args.final_dir)
+    print(f"\nCrops manuais antigos removidos antes de mesclar de novo: {removed}")
+
+    print("Fundindo crops com data/final/...")
     stats, missing = merge_crops(splits, args.crops_dir, args.final_dir)
 
     print("\n" + "=" * 50)

@@ -25,11 +25,14 @@ CASES_URL = BUCKET_BASE + "dataset/scin_cases.csv"
 LABELS_URL = BUCKET_BASE + "dataset/scin_labels.csv"
 
 
-def download_file(url, dest):
+def download_file(url, dest, timeout=15):
     if os.path.exists(dest):
         return
     os.makedirs(os.path.dirname(dest), exist_ok=True)
-    urllib.request.urlretrieve(url, dest)
+    tmp_dest = dest + ".part"
+    with urllib.request.urlopen(url, timeout=timeout) as resp, open(tmp_dest, "wb") as f:
+        f.write(resp.read())
+    os.rename(tmp_dest, dest)
 
 
 def load_metadata(meta_dir):

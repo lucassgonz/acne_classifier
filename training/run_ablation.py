@@ -148,10 +148,10 @@ class AcneDataset(Dataset):
         return img, label, torch.tensor(region_idx)
 
 
-def build_transforms(strong_aug=False):
+def build_transforms(strong_aug=False, size=224):
     if strong_aug:
         train_tf = transforms.Compose([
-            transforms.RandomResizedCrop(224, scale=(0.85, 1.0), ratio=(0.95, 1.05)),
+            transforms.RandomResizedCrop(size, scale=(0.85, 1.0), ratio=(0.95, 1.05)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(25),
             transforms.ColorJitter(brightness=0.25, contrast=0.25, saturation=0.25, hue=0.05),
@@ -161,7 +161,7 @@ def build_transforms(strong_aug=False):
         ])
     else:
         train_tf = transforms.Compose([
-            transforms.Resize((224, 224)),
+            transforms.Resize((size, size)),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomRotation(25),
             transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.05),
@@ -170,7 +170,7 @@ def build_transforms(strong_aug=False):
             transforms.RandomErasing(p=0.2),
         ])
     val_tf = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((size, size)),
         transforms.ToTensor(),
     ])
     return train_tf, val_tf
@@ -261,12 +261,13 @@ def evaluate(model, loader, device):
 
 def train_model(model, train_loader, val_loader, test_loader,
                 class_weights, device, num_epochs=40, patience=10, weight_decay=1e-4,
-                loss_type="weighted_ce", mixup_alpha=0.0):
+                loss_type="weighted_ce", mixup_alpha=0.0, lr=1e-4,
+                swa=False, swa_epochs=10, swa_lr=None):
     if loss_type == "focal":
         criterion = FocalLoss(weight=class_weights.to(device), gamma=2.0)
     else:
         criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=weight_decay)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="max", factor=0.5, patience=5
     )
@@ -288,6 +289,40 @@ def train_model(model, train_loader, val_loader, test_loader,
             patience_counter += 1
             if patience_counter >= patience:
                 break
+
+    if swa:
+        # Fase adicional de SWA (Stochastic Weight Averaging, Izmailov et al.
+        # 2018): parte do melhor checkpoint ja encontrado, continua treinando
+        # por mais algumas epocas com LR baixo e constante, e faz a media dos
+        # pesos ao longo dessas epocas -- tende a cair num minimo mais "largo"
+        # e generalizar melhor do que um unico checkpoint. So substitui o
+        # resultado original se realmente for melhor na validacao.
+        model.load_state_dict(best_state)
+        swa_model = torch.optim.swa_utils.AveragedModel(model)
+        swa_lr = swa_lr if swa_lr is not None else lr * 0.5
+        swa_optimizer = torch.optim.Adam(model.parameters(), lr=swa_lr, weight_decay=weight_decay)
+
+        for _ in range(swa_epochs):
+            train_one_epoch(model, train_loader, criterion, swa_optimizer, device, mixup_alpha=mixup_alpha)
+            swa_model.update_parameters(model)
+
+        # torch.optim.swa_utils.update_bn so passa 1 argumento posicional pro
+        # modelo, mas o nosso forward espera (x, region_idx) -- refeito aqui
+        # manualmente para recalcular as estatisticas de BatchNorm direito.
+        for module in swa_model.modules():
+            if isinstance(module, nn.modules.batchnorm._BatchNorm):
+                module.reset_running_stats()
+                module.momentum = None
+        swa_model.train()
+        with torch.no_grad():
+            for imgs, _, regions in train_loader:
+                swa_model(imgs.to(device), regions.to(device))
+
+        swa_val_acc, _, _ = evaluate(swa_model, val_loader, device)
+
+        if swa_val_acc > best_val_acc:
+            best_val_acc = swa_val_acc
+            best_state = {k: v.cpu().clone() for k, v in swa_model.module.state_dict().items()}
 
     model.load_state_dict(best_state)
     test_acc, test_f1, test_qwk = evaluate(model, test_loader, device)
@@ -316,6 +351,11 @@ def main():
     parser.add_argument("--only-config", choices=["with_embedding", "no_embedding"], default=None,
                         help="Roda apenas essa configuracao (pula a outra). Util para gerar checkpoints de um unico modelo.")
     parser.add_argument("--output", default="results/ablation_results.json")
+    parser.add_argument("--lr", type=float, default=1e-4)
+    parser.add_argument("--img-size", type=int, default=224)
+    parser.add_argument("--swa", action="store_true",
+                        help="Ativa Stochastic Weight Averaging apos o treino normal")
+    parser.add_argument("--swa-epochs", type=int, default=10)
     parser.add_argument("--mixup-alpha", type=float, default=0.0,
                         help="Ativa Mixup com esse alpha (ex: 0.2). 0 desativa (padrao).")
     parser.add_argument("--pretrained-backbone", default=None,
@@ -327,7 +367,7 @@ def main():
     device = get_device()
     print(f"Device: {device}")
 
-    train_tf, val_tf = build_transforms(strong_aug=args.strong_aug)
+    train_tf, val_tf = build_transforms(strong_aug=args.strong_aug, size=args.img_size)
 
     train_ds = AcneDataset(args.data_dir, ["train"], train_tf)
     val_ds = AcneDataset(args.data_dir, ["val"], val_tf)
@@ -347,11 +387,11 @@ def main():
         sampler = torch.utils.data.WeightedRandomSampler(
             sample_weights, num_samples=len(sample_weights), replacement=True
         )
-        train_loader = DataLoader(train_ds, batch_size=args.batch_size, sampler=sampler, num_workers=0, pin_memory=False)
+        train_loader = DataLoader(train_ds, batch_size=args.batch_size, sampler=sampler, num_workers=0, pin_memory=False, drop_last=True)
         balanced_weights = compute_class_weight("balanced", classes=np.unique(all_labels_train), y=all_labels_train)
         class_weights = torch.tensor(np.sqrt(balanced_weights), dtype=torch.float)
     else:
-        train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False)
+        train_loader = DataLoader(train_ds, batch_size=args.batch_size, shuffle=True, num_workers=0, pin_memory=False, drop_last=True)
         class_weights = torch.tensor(
             compute_class_weight("balanced", classes=np.unique(all_labels_train), y=all_labels_train),
             dtype=torch.float,
@@ -402,6 +442,9 @@ def main():
                 weight_decay=args.weight_decay,
                 loss_type=args.loss,
                 mixup_alpha=args.mixup_alpha,
+                lr=args.lr,
+                swa=args.swa,
+                swa_epochs=args.swa_epochs,
             )
             results[tag].append({"seed": seed, "accuracy": acc, "f1_weighted": f1, "qwk": qwk})
             print(f"  Test Acc={acc:.4f}  F1={f1:.4f}  QWK={qwk:.4f}", flush=True)

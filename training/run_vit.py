@@ -31,7 +31,9 @@ from run_ablation import (
 )
 
 
-def get_device():
+def get_device(force_cpu=False):
+    if force_cpu:
+        return torch.device("cpu")
     if torch.backends.mps.is_available():
         return torch.device("mps")
     if torch.cuda.is_available():
@@ -121,10 +123,11 @@ def main():
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--mixup-alpha", type=float, default=0.0)
     parser.add_argument("--save-model", default=None)
+    parser.add_argument("--force-cpu", action="store_true")
     parser.add_argument("--output", default="results/vit_results.json")
     args = parser.parse_args()
 
-    device = get_device()
+    device = get_device(args.force_cpu)
     print(f"Device: {device}", flush=True)
 
     set_seed(args.seed)

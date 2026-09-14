@@ -19,11 +19,15 @@ backups/
 acnenet_modelo.zip
 
 # Checkpoints intermediarios de ablacao/ensemble (grandes, nao sao o modelo final)
-training/models/ablation_ckpt/
-training/models/ablation_ckpt_mixup/
-training/models/ablation_ckpt_coral/
+training/models/*ckpt*/
+training/models/multiregion_ckpt*/
+training/models/wholeimage_ckpt*/
+training/models/wholeimage_clean_swa/
+training/models/cross_diag/
 training/models/backbone_scin_pretrained.pth
 training/models/backbone_scin_pretrained_v2.pth
+training/models/backbone_scin_pretrained_r34.pth
+training/models/backbone_scin_plus_manual.pth
 
 # Modelos em papers (intermediários de experimentos)
 papers/sibgrapi/results/*.pth

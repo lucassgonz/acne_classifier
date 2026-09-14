@@ -56,6 +56,7 @@ def main():
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--val-ratio", type=float, default=0.15)
     parser.add_argument("--output", default="models/backbone_scin_pretrained.pth")
+    parser.add_argument("--arch", choices=["resnet18", "resnet34"], default="resnet18")
     parser.add_argument("--force-cpu", action="store_true",
                         help="Forca uso de CPU em vez de MPS (mais lento, porem com uso de memoria mais previsivel)")
     args = parser.parse_args()
@@ -89,7 +90,9 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=args.batch_size, shuffle=False, num_workers=0)
 
     # Backbone com pesos ImageNet, cabeça trocada para o numero de classes do SCIN
-    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+    ctor = models.resnet18 if args.arch == "resnet18" else models.resnet34
+    weights_enum = models.ResNet18_Weights if args.arch == "resnet18" else models.ResNet34_Weights
+    model = ctor(weights=weights_enum.DEFAULT)
     model.fc = nn.Sequential(
         nn.Dropout(0.4),
         nn.Linear(model.fc.in_features, num_classes),
