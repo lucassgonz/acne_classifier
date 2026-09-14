@@ -52,8 +52,8 @@ training/
   evaluate_wholeimage_ensemble_tta.py   Avaliação ensemble + TTA (imagem inteira)
   evaluate_multiregion_ensemble_tta.py  Avaliação ensemble + TTA (fusão multi-região)
   evaluate_by_region.py                 Desempenho por região anatômica
-  predict.py                            Inferência via linha de comando
-  model.py                              Arquitetura legada (per-região, ver histórico)
+  predict.py                            Inferência via linha de comando (um checkpoint por vez)
+  model.py                              Arquitetura legada (não usada pelo pipeline atual; mantida por histórico)
   models/                               Backbones e checkpoints finais (não versionados; ver abaixo)
   results/                              Resultados de cada experimento (JSON)
   utils/
@@ -86,7 +86,12 @@ O modelo é treinado sobre a combinação de duas fontes de imagens:
 
 Cada imagem é segmentada em até 5 recortes anatômicos via MediaPipe Face Mesh (`training/utils/segment_faces_mediapipe.py`). O split treino/val/teste é feito **antes** da segmentação, ao nível da imagem original, garantindo que todos os recortes de uma mesma foto fiquem no mesmo split.
 
-Para obter os dados de treino já processados, entre em contato com os autores.
+**Dataset processado e checkpoints treinados**: disponibilizados à parte (fora do repositório, por tamanho) em `dataset.zip` (~620 MB) e `models.zip` (~1,1 GB). Para usar:
+
+```
+dataset.zip → extrair em data/        (cria data/final, data/wholeimage, data/manual_annotations, data/manual_crops, data/acne_1024)
+models.zip  → extrair em training/models/   (cria os checkpoints finais e o backbone)
+```
 
 ---
 
@@ -120,6 +125,8 @@ pip install -r training/requirements_mps.txt
 ---
 
 ## Pipeline de Treinamento (do zero)
+
+> Os passos 1–3 documentam como `data/final` e `data/wholeimage` foram originalmente construídos, mas o **`dataset.zip` compartilhado já contém esse resultado pronto**. Para retreinar ou reproduzir resultados, pule direto para o passo 4 (ou para "Reproduzir os resultados sem retreinar", abaixo, se também tiver o `models.zip`).
 
 1. **Split do ACNE04 (70/15/15, por imagem)**
    ```bash
@@ -158,6 +165,37 @@ pip install -r training/requirements_mps.txt
    ```bash
    python evaluate_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_swa --tag with_embedding --tta-views 7
    ```
+
+---
+
+## Reproduzir os resultados sem retreinar
+
+O treino completo (5 seeds × 4 configurações) leva várias horas de GPU. Com `dataset.zip` e `models.zip` já extraídos (ver seção "Dados"), dá para reproduzir os números do artigo direto:
+
+```bash
+cd training
+
+# Modelo principal (Region-Aware ResNet-18): 64,18% acc / QWK 0,718
+python evaluate_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_swa --tag with_embedding --tta-views 7
+
+# Ablation (ResNet-18 convencional, sem embedding): 64,18% acc / QWK 0,698
+python evaluate_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_noembed_swa --tag no_embedding --tta-views 7
+
+# Baseline de imagem inteira: 76,26% acc / QWK 0,829
+python evaluate_wholeimage_ensemble_tta.py --data-dir ../data/wholeimage --checkpoints-dir models/wholeimage_clean_swa --tta-views 7
+
+# Fusão multi-região: 69,06% acc / QWK 0,770
+python evaluate_multiregion_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/multiregion_ckpt_v3 --tta-views 7
+
+# Desempenho por região anatômica
+python evaluate_by_region.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_swa --tag with_embedding --tta-views 7
+```
+
+Para classificar uma única imagem já recortada por região:
+```bash
+python predict.py caminho/para/imagem.jpg --region forehead --weights models/ablation_ckpt_clean_swa/with_embedding_seed42.pth
+```
+(usa um único seed, não o ensemble completo — para o resultado reportado no artigo, use os scripts `evaluate_*` acima.)
 
 ---
 

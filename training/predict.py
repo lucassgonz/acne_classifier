@@ -1,14 +1,13 @@
 import argparse
-import os
 
 import torch
 from PIL import Image
 from torchvision import transforms
 
-from model import OptimizedMultiRegionResNet18
+from run_ablation import ResNet18WithEmbed
 
 REGIONS = ["forehead", "chin", "nose", "left_cheek", "right_cheek"]
-CLASS_NAMES = ["nivel_0", "nivel_1", "nivel_2", "nivel_3"]
+CLASS_NAMES = ["Mild", "Moderate", "Severe", "Very Severe"]
 
 TRANSFORM = transforms.Compose([
     transforms.Resize((224, 224)),
@@ -16,8 +15,16 @@ TRANSFORM = transforms.Compose([
 ])
 
 
+def get_device():
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
+
+
 def load_model(weights_path, device):
-    model = OptimizedMultiRegionResNet18().to(device)
+    model = ResNet18WithEmbed().to(device)
     model.load_state_dict(torch.load(weights_path, map_location=device))
     model.eval()
     return model
@@ -50,12 +57,12 @@ def main():
     parser.add_argument("--region", required=True, choices=REGIONS, help="Regiao facial da imagem")
     parser.add_argument(
         "--weights",
-        default=os.path.join(os.path.dirname(__file__), "models", "best_robust_model.pth"),
-        help="Caminho do arquivo .pth",
+        required=True,
+        help="Caminho do arquivo .pth (ex: models/ablation_ckpt_clean_swa/with_embedding_seed42.pth)",
     )
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     model = load_model(args.weights, device)
     result = predict_image(model, args.image, args.region, device)
 
