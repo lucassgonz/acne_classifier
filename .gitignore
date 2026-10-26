@@ -65,3 +65,6 @@ acne_classifier_app/android/local.properties
 papers/entrega_artigos.zip
 papers/*.docx
 _article_extract.txt
+
+# IA utilizada para formatação dos papers
+.claude/

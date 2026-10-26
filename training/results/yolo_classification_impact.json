@@ -1,0 +1,20 @@
+{
+  "n_test_images": 393,
+  "mediapipe": {
+    "n_evaluated": 392,
+    "accuracy": 0.8852040816326531,
+    "avg_regions_detected": 4.971938775510204
+  },
+  "yolo": {
+    "n_evaluated": 391,
+    "accuracy": 0.8414322250639387,
+    "avg_regions_detected": 4.716112531969309
+  },
+  "disagreement_rate": 0.0741687979539642,
+  "yolo_detection_metrics_from_training": {
+    "precision": 0.8571423400096789,
+    "recall": 0.8767579164663871,
+    "mAP50": 0.9003825547900055,
+    "mAP50_95": 0.6481046683891861
+  }
+}

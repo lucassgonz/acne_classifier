@@ -1,0 +1,70 @@
+{
+  "config": "whole_v2_effnet_swa_tta",
+  "n_folds": 5,
+  "n_samples_pooled": 2863,
+  "accuracy": 0.7593433461404121,
+  "f1_macro": 0.747517296909737,
+  "f1_weighted": 0.758412110525177,
+  "qwk": 0.8466271603317191,
+  "confusion_matrix": [
+    [
+      830,
+      155,
+      3,
+      0
+    ],
+    [
+      243,
+      887,
+      110,
+      20
+    ],
+    [
+      1,
+      66,
+      237,
+      59
+    ],
+    [
+      0,
+      2,
+      30,
+      220
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.840080971659919,
+      "specificity": 0.8698666666666667,
+      "support": 988
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.703968253968254,
+      "specificity": 0.860885839051778,
+      "support": 1260
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.6528925619834711,
+      "specificity": 0.9428,
+      "support": 363
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.873015873015873,
+      "specificity": 0.9697433933358867,
+      "support": 252
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.049339053579197885
+  }
+}

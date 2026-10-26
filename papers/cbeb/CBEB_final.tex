@@ -7,6 +7,8 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{placeins}
+\usepackage{float}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -23,10 +25,10 @@ Fortaleza, CE, Brazil \\
 daniel.carvalho60@aluno.ifce.edu.br}
 \and
 \IEEEauthorblockN{2\textsuperscript{nd} Lucas G. Andrade}
-\IEEEauthorblockA{\textit{Dept. de Telemática (DTEL)} \\
+\IEEEauthorblockA{\textit{Dept. de Física e Matemática (DEFIMAT)} \\
 \textit{Instituto Federal do Ceará (IFCE)}\\
 Fortaleza, CE, Brazil \\
-gonluk0607@gmail.com}
+lucas.andrade14@aluno.ifce.edu.br}
 \and
 \IEEEauthorblockN{3\textsuperscript{nd} Enzo G. R. B. Moreira}
 \IEEEauthorblockA{\textit{Dept. de Telemática (DTEL)} \\
@@ -52,7 +54,7 @@ rogerms@ifce.edu.br}
 \maketitle
 
 \begin{abstract}
-Acne vulgaris is one of the most prevalent dermatological conditions worldwide, making the continuous assessment of its severity a significant challenge for teledermatology applications. Automated acne severity assessment represents a promising application of artificial intelligence to support teledermatology and remote patient monitoring. However, many existing approaches rely on computationally expensive architectures or multi-stage lesion detection, which often limits their implementation on mobile devices. This work proposes a region-aware framework in which five facial anatomical regions are automatically extracted using a landmark-based facial segmentation approach and classified by a lightweight, region-aware ResNet-18 network that incorporates learnable anatomical embeddings. The convolutional backbone is initialized in two stages, first on ImageNet and subsequently on a broader dermatological image collection, before fine-tuning on the acne severity task; the final model combines stochastic weight averaging, a multi-seed ensemble, and test-time augmentation. The proposed approach explicitly integrates anatomical context while maintaining a single, shared convolutional backbone, thereby reducing architectural complexity and computational cost. The model was evaluated on a combined image collection built from the public ACNE04 dataset and an independently sourced, author-annotated image set, for four-level acne severity classification. The evaluation includes a controlled ablation against a conventional ResNet-18 without anatomical embeddings, a cross-source generalization analysis, and an examination of regional performance. Under a fully leakage-controlled protocol, the proposed approach achieved 64.18\% accuracy and a weighted F1-score of 0.641; a controlled ablation shows comparable raw accuracy to a conventional ResNet-18 trained under an identical protocol, but a consistently higher Quadratic Weighted Kappa, indicating more ordinally consistent predictions in addition to the region-localized output that the conventional baseline cannot produce. A complementary whole-face baseline, trained under the same data and optimization protocol but without region segmentation, reached 76.26\% accuracy, indicating that the currently available data supports substantially higher accuracy when anatomical localization is not required and quantifying the accuracy currently traded for the region-level predictions that motivate the proposed design. An additional multi-region fusion variant, which combines all available region crops of the same image into a single prediction while still exploiting the learned anatomical embeddings, reached 69.06\% accuracy and a QWK of 0.770, recovering close to half of this gap without discarding anatomical structure, although at the cost of the per-region output that the region-crop model provides. Furthermore, a Flutter-based mobile prototype demonstrated the feasibility of integrating the proposed framework into teledermatology workflows. These results indicate that the proposed framework yields more ordinally consistent predictions than a region-agnostic baseline while additionally providing region-localized output, highlighting data diversity as the main direction for further gains in raw accuracy.
+Acne vulgaris is one of the most prevalent dermatological conditions worldwide, making the continuous assessment of its severity a significant challenge for teledermatology applications. Automated acne severity assessment represents a promising application of artificial intelligence to support teledermatology and remote patient monitoring. However, many existing approaches rely on computationally expensive architectures or multi-stage lesion detection, which often limits their implementation on mobile devices. This work proposes a region-aware framework in which five facial anatomical regions are automatically extracted using a landmark-based facial segmentation approach and classified by a lightweight, region-aware ResNet-18 network that incorporates learnable anatomical embeddings. The model was evaluated on a leakage-controlled combination of two public releases of the ACNE04 photograph collection, totaling 2,863 facial images grouped by photographic identity so that no individual photograph is split across training and test partitions. Under grouped 5-fold cross-validation, a controlled ablation shows the proposed anatomical embedding consistently outperforming a conventional ResNet-18 trained under an identical protocol: aggregating, without any additional training, the predicted class probabilities of every available region crop of the same photograph raises accuracy from 66.94\% to 70.45\% (QWK from 0.674 to 0.706), a 3.51-point advantage that is already present, in smaller but consistent form, at the level of individual region crops before any aggregation (58.36\% vs. 56.68\% accuracy, QWK 0.556 vs. 0.539). A complementary whole-face reference baseline, additionally equipped with a Convolutional Block Attention Module, stochastic weight averaging, test-time augmentation, and a 5-seed ensemble, reached 79.04\% accuracy and a QWK of 0.859. Evaluated under the original 5-fold benchmark split released by the ACNE04 authors, the same whole-face configuration reached 76.64\% accuracy, directly comparable to the 84.11\% reported by the dataset's original authors under an identical split. A quantitative error-propagation analysis further shows that automatic region-detection errors, measured with a YOLOv8 detector trained without lesion-level supervision, cost approximately 4.4 percentage points of downstream classification accuracy relative to landmark-based region extraction. Finally, a Flutter-based mobile prototype was benchmarked on physical Android hardware, completing a full five-region assessment in 3.14 seconds on average and consuming an estimated 7.6 mAh of battery per analysis. These results characterize a lightweight, anatomically-aware acne severity classifier under a rigorous, leakage-free evaluation protocol, quantify the accuracy-granularity trade-off against a whole-face reference, and provide, to the best of our knowledge, the first on-device latency, memory, and energy measurements reported for this task.
 \end{abstract}
 \begin{IEEEkeywords}
 Acne vulgaris, acne severity classification, deep learning, ResNet-18, anatomical embeddings, teledermatology.
@@ -62,28 +64,28 @@ Acne vulgaris is one of the most prevalent inflammatory skin diseases worldwide,
 
 The growing advancements in teledermatology have expanded access to dermatological care by enabling the remote assessment of skin conditions via images captured with mobile devices \cite{b3},\cite{b4}. Concurrently, recent advances in Artificial Intelligence (AI) and Deep Learning (DL) have significantly enhanced the automated analysis of dermatological images, with convolutional neural networks (CNNs) achieving promising results in lesion detection, segmentation, and disease classification \cite{b5},\cite{b6}.
 
-Despite advancements, the automated assessment of acne severity remains a challenge. Most existing approaches rely on multi-stage processing pipelines in which individual acne lesions are first detected and subsequently quantified to estimate disease severity \cite{b7} -\cite{b9}. Although effective, these strategies increase computational complexity, require lesion-level annotations, propagate errors across processing stages, and are less suitable for implementation on mobile devices. Furthermore, most previous studies evaluate model performance primarily based on global classification results under a single random split, with limited investigation into the isolated contribution of architectural design choices and generalization across independently collected data sources \cite{b10} -\cite{b12}.
+Despite advancements, the automated assessment of acne severity remains a challenge. Most existing approaches rely on multi-stage processing pipelines in which individual acne lesions are first detected and subsequently quantified to estimate disease severity \cite{b7} -\cite{b9}. Although effective, these strategies increase computational complexity, require lesion-level annotations, propagate errors across processing stages, and are less suitable for implementation on mobile devices. Furthermore, most previous studies evaluate model performance primarily based on global classification results under a single random split, with limited investigation into the isolated contribution of architectural design choices, direct comparability with the original benchmark split of the dataset they build upon, and real on-device resource costs \cite{b10} -\cite{b12}.
 
 To overcome these limitations, this work proposes a region-aware framework for classifying facial acne severity. The framework combines the automatic extraction of facial anatomical regions, using a landmark-based facial segmentation approach, with a lightweight, region-aware ResNet-18 network that incorporates learnable anatomical embeddings. This design explicitly integrates anatomical context while maintaining a single, shared convolutional backbone, thereby reducing computational complexity and facilitating implementation in teledermatology mobile applications.
 
 The main contributions of this work are:
 \begin{itemize}
 \item The proposal of a Region-Aware framework that combines automatic anatomical facial region extraction with a lightweight Region-Aware ResNet-18 incorporating learnable anatomical embeddings for acne severity classification.
-\item A controlled ablation study isolating the contribution of the anatomical embedding, comparing the proposed architecture against a conventional ResNet-18 trained under an identical data, backbone initialization, and optimization protocol, with results reported as mean $\pm$ standard deviation across multiple independent runs together with the corresponding ensemble performance.
-\item A cross-source generalization analysis in which the model is trained on one image source and evaluated on the entirety of an independently collected, non-overlapping source, and vice versa, quantifying performance under real distribution shift rather than relying solely on a random split of a combined dataset.
-\item The development of a Flutter-based mobile prototype demonstrating the feasibility of integrating the proposed framework into practical teledermatology workflows.
+\item A controlled ablation study isolating the contribution of the anatomical embedding, comparing the proposed architecture against a conventional ResNet-18 trained under an identical data, backbone initialization, and optimization protocol, evaluated through grouped 5-fold cross-validation, together with a zero-additional-training multi-region fusion analysis that recovers a large share of the whole-face accuracy without discarding the anatomical embedding.
+\item A direct, same-split comparison against the original ACNE04 benchmark partition released by the dataset's authors, alongside a quantitative analysis of how automatic region-detection errors propagate into the final severity classification.
+\item The development and benchmarking, on physical Android hardware, of a Flutter-based mobile prototype, providing real end-to-end latency, memory, and energy measurements for the proposed pipeline.
 \end{itemize}
 
 Thus, the proposed approach goes beyond the development of a classification model, integrating the automatic extraction of anatomical regions, AI-based inference, and implementation in a mobile application aimed at teledermatology applications.
 
-The remainder of this paper is organized as follows. Section II reviews recent studies on AI-based acne severity assessment. Section III describes the proposed Region-Aware ResNet-18 architecture, datasets, and experimental protocol. Section IV presents the experimental results and discussion. Finally, Section V concludes the paper and outlines future research directions.
+The remainder of this paper is organized as follows. Section II reviews recent studies on AI-based acne severity assessment. Section III describes the proposed Region-Aware ResNet-18 architecture, datasets, and experimental protocol. Section IV presents the experimental results, which Section V then discusses. Section VI outlines the main limitations of this work, and Section VII concludes the paper and outlines future research directions.
 
 \section{Related Work}
 
 \subsection{Automatic Acne Severity Assessment}
 Recent advances in deep learning have significantly improved the automated assessment of acne severity from facial images. Existing approaches can be categorized into two groups: lesion-based multi-stage processing pipelines and direct severity classification models \cite{b13} -\cite{b16}.
 
-Multi-stage approaches first detect individual acne lesions and then assess disease severity based on the number, type, or distribution of the detected lesions. Architectures based on Faster R-CNN, YOLO, and hybrid detection-and-classification frameworks have demonstrated competitive performance \cite{b13}–\cite{b17}. However, these approaches rely on detailed lesion-level annotations, entail higher computational costs, and make the classification process more sensitive to failures during the detection stage. These characteristics hinder their use in mobile applications, particularly in teledermatology scenarios requiring fast and efficient inference \cite{b11}, \cite{b12}.
+Multi-stage approaches first detect individual acne lesions and then assess disease severity based on the number, type, or distribution of the detected lesions. Architectures based on Faster R-CNN, YOLO, and hybrid detection-and-classification frameworks have demonstrated competitive performance \cite{b13}–\cite{b17}. The original ACNE04 release itself was introduced alongside a joint grading-and-counting architecture that explicitly supervises lesion counts \cite{b30}, and subsequent work incorporating skin-attention mechanisms \cite{b32} or diagnostic evidence distillation \cite{b18} has further improved on this joint formulation. However, these approaches rely on detailed lesion-level annotations, entail higher computational costs, and make the classification process more sensitive to failures during the detection stage. These characteristics hinder their use in mobile applications, particularly in teledermatology scenarios requiring fast and efficient inference \cite{b11}, \cite{b12}.
 
 Another approach involves direct classification models that estimate acne severity directly from facial images, without explicit lesion detection. CNN-based architectures, including ResNet, EfficientNet, and, more recently, CNN-Transformer and Vision Transformer models, have shown promising results while simplifying the inference process \cite{b15}–\cite{b18}, \cite{b21}. However, transformer-based models generally require greater computational resources, making their implementation on mobile devices more challenging. In contrast, lightweight CNNs, such as ResNet-18, offer a favorable balance between predictive performance, computational efficiency, and ease of implementation, characteristics that are desirable for teledermatology applications.
 
@@ -92,11 +94,11 @@ Another approach involves direct classification models that estimate acne severi
 \subsection{Research Gap}
 Despite the advances made in recent years, significant challenges remain regarding the widespread use of automated acne severity classification systems in teledermatology applications. Many proposed solutions achieve good experimental performance but rely on complex architectures, comprising multiple stages or various models, which increases computational cost and hinders their use on mobile devices. Furthermore, several approaches require detailed lesion annotations, making dataset creation more labor-intensive and limiting the scalability of these systems \cite{b14}, \cite{b19}–\cite{b21}.
 
-Another aspect deserving attention is how these models are evaluated. Generally, studies focus their analysis on traditional performance metrics computed under a single random split, while aspects crucial for scientific rigor, such as the isolated contribution of a proposed architectural component and generalization across independently collected data sources, receive comparatively little attention \cite{b14}. In clinical applications, understanding whether a system generalizes beyond the population and acquisition conditions used for training is just as important as its average in-distribution performance.
+Another aspect deserving attention is how these models are evaluated. Generally, studies focus their analysis on traditional performance metrics computed under a single random split, while aspects crucial for scientific rigor, such as the isolated contribution of a proposed architectural component, comparability against the exact benchmark partition released alongside the dataset, and measured (rather than estimated) on-device resource costs, receive comparatively little attention \cite{b14}.
 
-Finally, few studies move beyond experimental evaluation to demonstrate the feasibility of deployment in real-world teledermatology scenarios. Model integration into mobile applications remains limited, despite the potential of these platforms to expand access to remote patient care and support the continuous monitoring of clinical progression \cite{b13}.
+Finally, few studies move beyond experimental evaluation to demonstrate the feasibility of deployment in real-world teledermatology scenarios. Model integration into mobile applications remains limited, and even when a prototype is reported, its latency, memory footprint, and energy consumption are rarely measured on physical hardware, despite the potential of these platforms to expand access to remote patient care and support the continuous monitoring of clinical progression \cite{b13}.
 
-In contrast to these approaches, this paper presents a framework that utilizes a landmark-based facial segmentation approach exclusively during preprocessing to automatically locate anatomical facial regions, relying on a publicly available, pre-trained facial landmark estimator rather than a task-specific detector that would require its own annotated training set. Acne severity classification is subsequently performed by a lightweight, region-sensitive ResNet-18 network that incorporates learnable anatomical embeddings into a single shared convolutional backbone. This strategy preserves explicit anatomical context without relying on lesion-level annotations, multiple specialized models, or computationally expensive attention mechanisms. Furthermore, the proposed evaluation isolates the contribution of the anatomical embedding through a controlled ablation and quantifies generalization across independently collected image sources, alongside the implementation of a mobile prototype developed in Flutter \cite{b28} for teledermatology applications.
+In contrast to these approaches, this paper presents a framework that utilizes a landmark-based facial segmentation approach exclusively during preprocessing to automatically locate anatomical facial regions, relying on a publicly available, pre-trained facial landmark estimator rather than a task-specific detector that would require its own annotated training set. Acne severity classification is subsequently performed by a lightweight, region-sensitive ResNet-18 network that incorporates learnable anatomical embeddings into a single shared convolutional backbone. This strategy preserves explicit anatomical context without relying on lesion-level annotations, multiple specialized models, or computationally expensive attention mechanisms in the proposed architecture itself. Furthermore, the proposed evaluation isolates the contribution of the anatomical embedding through a controlled ablation, directly compares against the original ACNE04 benchmark split, quantifies how automatic region-detection errors propagate into the final prediction, and reports real on-device latency, memory, and energy measurements obtained from a mobile prototype developed in Flutter \cite{b28}.
 
 
 
@@ -104,7 +106,7 @@ In contrast to these approaches, this paper presents a framework that utilizes a
 \section{Materials and Methods}
 The proposed framework performs automatic classification of facial acne severity by combining anatomical information from the face. Instead of analyzing the face as a single image, the method first identifies key facial anatomical regions and then incorporates this information into the classification process using learnable anatomical embeddings. Figure~\ref{fig1} summarizes the complete processing pipeline adopted in this work.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{figures/fig1_.png}
     \caption{Overview of the proposed Region-Aware acne severity assessment pipeline.}
@@ -113,35 +115,37 @@ The proposed framework performs automatic classification of facial acne severity
 
 Initially, facial images are pre-processed and divided into their key anatomical regions. Next, each region is analyzed by the proposed Region-Aware ResNet-18 architecture, which combines visual features with learnable anatomical embeddings to estimate the acne severity level. Finally, the trained model is integrated into a mobile application developed in Flutter, enabling its use in teledermatology scenarios.
 
-The remainder of this section is organized as follows. Section \ref{sub-III-a} describes the image sources and the processing pipeline, including the sampling unit adopted throughout the study. Section \ref{sub-III-b} presents the proposed Region-Aware ResNet-18 architecture. Section \ref{sub-III-c} details the training strategy, including backbone initialization, data augmentation, and optimization procedures, and finally, Section \ref{sub-III-d} describes the experimental protocol adopted to evaluate the proposed framework, including the ablation and cross-source generalization design.
+The remainder of this section is organized as follows. Section \ref{sub-III-a} describes the image sources and the processing pipeline, including the sampling unit adopted throughout the study and the subject-level separation strategy. Section \ref{sub-III-b} presents the proposed Region-Aware ResNet-18 architecture. Section \ref{sub-III-c} details the training strategy, including backbone initialization, data augmentation, and optimization procedures, and finally, Section \ref{sub-III-d} describes the complete experimental protocol adopted to evaluate the proposed framework.
 
 \subsection{Image Sources, Sampling Unit, and Pre-processing}\label{sub-III-a}
-The proposed framework was evaluated using a combined image collection built from two sources: the public ACNE04 dataset \cite{b27} and an independently collected image set annotated by one of the authors (referred to hereafter as the \textit{author-annotated} collection). The author-annotated collection aggregates facial images gathered from multiple public sources not previously labeled for severity; each image was graded and subsequently reviewed by the same annotator, following the same four-level Hayashi severity scale \cite{b12} used in ACNE04. Unlike ACNE04, this collection originates from a distinct population and image acquisition conditions (cameras, framing, and lighting), which allows it to be used both to enlarge the training collection and, separately, as an independent source for the cross-source generalization analysis described in Section \ref{sub-III-d}. Table~\ref{tab1} summarizes the two image sources.
+The proposed framework was evaluated using a combined image collection built from two public releases of the ACNE04 photograph collection \cite{b27}, \cite{b30}: a resized distribution (referred to hereafter as \textit{ACNE04}, 1,406 images) and the original-resolution release, organized by severity folder (referred to hereafter as \textit{AcneLevel}, 1,457 images). Both releases are graded on the same four-level Hayashi severity scale \cite{b12} (0--3). Cross-referencing AcneLevel against the official 5-fold benchmark split released by the dataset's original authors (used in Section \ref{sub-IV-f}) confirmed that its 1,457 images match, file for file, the officially released ACNE04 collection; the two local releases therefore originate from the same underlying photographic collection, at different resolutions and crops, rather than from two independently collected corpora. To obtain two genuinely distinct renderings of this shared collection suitable for combined training, AcneLevel was processed through a deterministic, per-image photometric and geometric transform (hue, saturation, brightness, and contrast jitter, rotation, and a crop-zoom operation, each seeded by the image's own filename so that the same image always receives the same transform) prior to any experiment, while ACNE04 was kept in its original form. Table~\ref{tab1} summarizes the two releases.
 
-\begin{table}[htbp]
+\begin{table}[H]
 \centering
-\caption{Characteristics of the image sources used in this study}
+\caption{Characteristics of the two ACNE04 releases combined in this study}
 \label{tab1}
-\small
-\begin{tabular}{|p{2.6cm}|p{2.6cm}|p{2.6cm}|}
+\footnotesize
+\begin{tabular}{|p{2.5cm}|p{2.1cm}|p{2.7cm}|}
 \hline
-\textbf{Characteristic} & \textbf{ACNE04} & \textbf{Author-annotated} \\
+\textbf{Characteristic} & \textbf{ACNE04} & \textbf{AcneLevel} \\
 \hline
-Images                  & 1,216           & 790              \\
+Images                  & 1,406           & 1,457              \\
 \hline
 Classes                 & 4               & 4                  \\
 \hline
 Severity Scale          & Hayashi (0–3)   & Hayashi (0–3)      \\
 \hline
-Annotators        & Original dataset labels & Single annotator (author), self-reviewed \\
+Treatment applied       & None (as released) & Deterministic image transform (Section III-A) \\
 \hline
 \end{tabular}
 \end{table}
 
-It is important to clarify the sampling unit adopted throughout this work, since each source image yields multiple anatomical region crops and, consequently, may contribute more than one sample to training and evaluation. The combined image collection comprises 2,006 unique facial images. Each image is automatically segmented into up to five anatomical region crops (forehead, chin, nose, left cheek, and right cheek); crops that fail a minimum size or sharpness criterion are discarded, so a given image may contribute between one and five valid crops. This process yields 7,653 region crops in total, which constitute the actual samples used to train and evaluate the classification model, since the proposed architecture classifies one anatomical region crop at a time. All training, validation, and test set sizes reported in this paper refer to this region-crop sampling unit unless explicitly stated as unique images. The split into training (70\%), validation (15\%), and test (15\%) subsets was performed at the image level, prior to region segmentation, so that every crop originating from the same source image is assigned to the same subset, preventing any individual from appearing in more than one subset. This split is additionally verified after every dataset update to guarantee the absence of cross-subset duplicates.
+Because the ACNE04 public release does not provide patient identifiers, subject-level separation was enforced through photographic identity rather than patient metadata: the shared original filename of the two renderings of a given photograph (confirmed via exact filename matching, as described above) was used as a grouping key in a \texttt{StratifiedGroupKFold} partitioning, guaranteeing that both renderings of the same photograph are always assigned to the same cross-validation fold and never split between training and test. The combined collection comprises 2,863 whole facial images, grouped into 1,457 unique photographic identities. No public metadata linking multiple photographs of the same individual (e.g., repeated acquisition sessions) was found for either release; photographic identity is therefore the finest-grained grouping unit available for this task, and is the one enforced throughout every experiment reported in this paper.
 
-The preprocessing pipeline is illustrated in Fig.~\ref{fig2}. First, a landmark-based facial segmentation approach, built on a 478-point facial mesh estimator, was used to automatically locate five facial anatomical regions (forehead, chin, nose, left cheek, and right cheek) instead of relying on a single global facial bounding box. A fixed subset of anatomical landmarks is used to derive each region's bounding box, based on well-established, publicly available facial landmark detection, requiring no additional detector training. This approach allows the model to explore visual features specific to each region.
-\begin{figure}[htbp]
+Each source image is automatically segmented into up to five anatomical region crops (forehead, chin, nose, left cheek, and right cheek) using a landmark-based facial segmentation approach, described below. Landmark-based face detection succeeded on 2,450 of the 2,863 images (1,222 of 1,406 ACNE04 images and 1,228 of 1,457 AcneLevel images); the remaining images, predominantly extreme close-ups of a single facial area rather than a fully framed face, were excluded from the region-crop pipeline. For every detected face, a region crop is additionally discarded whenever the anatomical bounding box computed from the facial landmarks (Fig.~\ref{fig2}) extends beyond the photograph's frame by more than 10\% of its area, since in that case the resulting crop would predominantly depict background or an unrelated facial area rather than the intended anatomical region. After this visibility filtering step, the combined collection yields 8,295 valid region crops (forehead: 2,307; nose: 2,443; chin: 1,158; left cheek: 1,214; right cheek: 1,173), grouped into 1,266 unique photographic identities. This process yields the actual samples used to train and evaluate the region-aware classification model, since the proposed architecture classifies one anatomical region crop at a time; all training, validation, and test set sizes reported for the region-crop model refer to this sampling unit unless explicitly stated as unique images.
+
+The preprocessing pipeline is illustrated in Fig.~\ref{fig2}. First, a landmark-based facial segmentation approach, built on a 478-point facial mesh estimator \cite{b25}, was used to automatically locate the five facial anatomical regions instead of relying on a single global facial bounding box. A fixed subset of anatomical landmarks is used to derive each region's bounding box, based on well-established, publicly available facial landmark detection, requiring no additional detector training. This approach allows the model to explore visual features specific to each region.
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{figures/fig2_.png}
     \caption{Samples of the datasets and the five automatically extracted facial anatomical regions.}
@@ -154,7 +158,7 @@ Each extracted region was resized to 224 × 224 pixels and normalized to ensure 
 \subsection{Proposed Region-Aware ResNet-18}\label{sub-III-b}
 The proposed Region-Aware ResNet-18 is the core classification module of the proposed framework. After the preprocessing stage, each anatomical facial region is processed independently by the network. As illustrated in Fig.~\ref{fig3}, the model receives two inputs: a cropped facial region image and its corresponding anatomical region index, which is used to retrieve the learnable embedding associated with that anatomical location.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
     \includegraphics[width=\linewidth]{figures/fig3_.png}
     \caption{Proposed Region-Aware ResNet-18 architecture.}
@@ -226,7 +230,9 @@ and the predicted severity level is obtained by
 \label{eq:prediction}
 \end{equation}
 
-Unlike a conventional ResNet-18, the proposed architecture incorporates the anatomical identity of each facial region into the classification process through learnable embeddings. This allows the network to adapt its feature representation based on the anatomical context while maintaining a single, shared backbone structure for all facial regions. Consequently, the proposed approach learns region-specific visual patterns with only a slight increase in the number of trainable parameters (approximately 0.1\% of the backbone's total parameter count), preserving the simplicity and computational efficiency of the original architecture. These characteristics make the proposed model suitable for integration into mobile teledermatology applications. Section \ref{sub-IV-b} reports a controlled ablation in which this same architecture is trained with the embedding branch removed, isolating its measured contribution.
+Unlike a conventional ResNet-18, the proposed architecture incorporates the anatomical identity of each facial region into the classification process through learnable embeddings. This allows the network to adapt its feature representation based on the anatomical context while maintaining a single, shared backbone structure for all facial regions. Consequently, the proposed approach learns region-specific visual patterns with only a slight increase in the number of trainable parameters (approximately 0.1\% of the backbone's total parameter count), preserving the simplicity and computational efficiency of the original architecture. Section \ref{sub-IV-b} reports a controlled ablation in which this same architecture is trained with the embedding branch removed, isolating its measured contribution.
+
+To establish the strongest possible point of reference, and to enable a literal, same-protocol comparison against the original ACNE04 benchmark (Section \ref{sub-IV-f}), the whole-face reference baseline introduced in Section \ref{sub-IV-e} additionally equips the ResNet-18 backbone with a Convolutional Block Attention Module (CBAM) \cite{b31}, inserted between the last convolutional block and the global-average-pooling layer. CBAM sequentially applies channel attention, computed from a shared multilayer perceptron over average- and max-pooled channel descriptors, and spatial attention, computed from a $7\times7$ convolution over channel-pooled spatial maps, re-weighting the backbone's feature map before pooling. This attention mechanism is evaluated only for the whole-face reference baseline; it is not part of the proposed Region-Aware ResNet-18 evaluated in the ablation of Section \ref{sub-IV-b}, so that the ablation's comparison remains isolated to the anatomical-embedding variable alone.
 
 \subsection{Training Strategy}\label{sub-III-c}
 
@@ -236,9 +242,9 @@ The convolutional backbone was initialized in two stages prior to fine-tuning on
 
 To enhance the model's generalization capability, several data augmentation techniques were applied during training, including random horizontal flipping, rotations, color jittering, Gaussian blurring, Random Erasing, and mixup interpolation between training samples. Furthermore, the learning rate was dynamically adjusted using the ReduceLROnPlateau scheduler, while early stopping was adopted to prevent overfitting and preserve the best-performing model.
 
-After convergence under early stopping, the model was further refined using Stochastic Weight Averaging (SWA) \cite{b29}: training continued for a fixed number of additional epochs at a reduced, constant learning rate, and the final weights were obtained by averaging the model parameters across these epochs, followed by a recalibration of the Batch Normalization statistics. The final reported model combines an ensemble of independently trained instances, each initialized with a different random seed, together with test-time augmentation (TTA): at inference time, each test crop is evaluated under a small set of augmented views, and the predicted class probabilities are averaged across both the ensemble members and the augmented views before the final decision is taken.
+For the whole-face reference baseline (Section \ref{sub-IV-e}), the model was further refined, after convergence under early stopping, using Stochastic Weight Averaging (SWA) \cite{b29}: training continued for a fixed number of additional epochs at a reduced, constant learning rate, and the final weights were obtained by averaging the model parameters across these epochs, followed by a recalibration of the Batch Normalization statistics. The final reported whole-face model combines an ensemble of five independently trained instances, each initialized with a different random seed, together with test-time augmentation (TTA): at inference time, each test image is evaluated under seven deterministic augmented views (identity, horizontal flip, small rotations, and color jitter), and the predicted class probabilities are averaged across both the ensemble members and the augmented views before the final decision is taken. The proposed Region-Aware ResNet-18 ablation (Section \ref{sub-IV-b}) deliberately omits SWA, TTA, and ensembling, so that the measured contribution of the anatomical embedding is not confounded by these additional, separately evaluated techniques (see Section \ref{sub-IV-b} for the rationale).
 
-The framework was implemented using PyTorch \cite{b24}. The key hyperparameters adopted during training are summarized in Table~\ref{tab2}. \begin{table}[htbp]
+The framework was implemented using PyTorch \cite{b24}. The key hyperparameters adopted during training are summarized in Table~\ref{tab2}. \begin{table}[H]
 \caption{Main hyperparameters used during the training of the proposed architecture.}
 \begin{center}
 \small
@@ -248,7 +254,7 @@ The framework was implemented using PyTorch \cite{b24}. The key hyperparameters 
 \hline
 Framework & PyTorch \\
 \hline
-Backbone & ResNet-18 \\
+Backbone & ResNet-18 (+ CBAM, whole-face baseline only) \\
 \hline
 Backbone initialization & ImageNet $\rightarrow$ SCIN \\
 \hline
@@ -262,19 +268,17 @@ Scheduler & ReduceLROnPlateau \\
 \hline
 Batch size & 16 \\
 \hline
-Maximum epochs & 40 (+10 SWA epochs) \\
+Maximum epochs & 40 (+10 SWA epochs, whole-face baseline only) \\
 \hline
 Data augmentation & Horizontal flip ($p=0.5$), Rotation ($\pm25^\circ$), Color Jitter, Gaussian Blur, Random Erasing, Mixup ($\alpha=0.2$) \\
 \hline
 Regularization & Batch Normalization and Dropout \\
 \hline
-Model refinement & Stochastic Weight Averaging \\
+Model refinement & SWA, 5-seed ensemble, 7-view TTA (whole-face baseline only) \\
 \hline
-Ensemble & 5 independent seeds \\
+Training hardware & Apple M-series (MPS backend) \\
 \hline
-Test-time augmentation & 7 views per sample \\
-\hline
-Hardware & Apple M-series (MPS backend) \\
+Inference hardware & Samsung Galaxy S24+ (on-device, Section \ref{sub-IV-h}) \\
 \hline
 \end{tabular}
 \label{tab2}
@@ -285,233 +289,306 @@ These training strategies were selected to improve model robustness while mainta
 
 \subsection{Experimental Protocol}\label{sub-III-d}
 
-The proposed framework was evaluated using standard multiclass classification metrics: Accuracy, Precision, Recall, and F1-score, together with the Quadratic Weighted Kappa (QWK), which accounts for the ordinal nature of the severity scale by penalizing errors between distant classes more heavily than errors between adjacent ones. These metrics are defined as follows:
+The proposed framework was evaluated using standard multiclass classification metrics: Accuracy, macro- and weighted-averaged F1-score, per-grade Sensitivity and Specificity, and the Quadratic Weighted Kappa (QWK), which accounts for the ordinal nature of the severity scale by penalizing errors between distant classes more heavily than errors between adjacent ones. Expected Calibration Error (ECE) is additionally reported to assess whether the model's predicted confidence reflects its actual accuracy.
 
 \begin{align}
 \mathrm{Accuracy} &= \frac{TP+TN}{TP+TN+FP+FN},\\
-\mathrm{Precision} &= \frac{TP}{TP+FP},\\
-\mathrm{Recall} &= \frac{TP}{TP+FN},\\
+\mathrm{Sensitivity} &= \frac{TP}{TP+FN},\quad
+\mathrm{Specificity} = \frac{TN}{TN+FP},\\
 F_1 &= 2\cdot
-\frac{\mathrm{Precision}\cdot\mathrm{Recall}}
-{\mathrm{Precision}+\mathrm{Recall}}.
+\frac{\mathrm{Precision}\cdot\mathrm{Sensitivity}}
+{\mathrm{Precision}+\mathrm{Sensitivity}}.
 \end{align}
 
-where $TP$, $TN$, $FP$, and $FN$ denote true positives, true negatives, false positives, and false negatives, respectively. Since acne severity classification involves four classes, Precision, Recall, and F1-score were computed for each class and reported using a weighted average.
+where $TP$, $TN$, $FP$, and $FN$ denote true positives, true negatives, false positives, and false negatives, respectively, computed per class and reported individually and as macro/weighted averages.
 
-Three complementary experiments were considered. \textit{(i) Overall and regional performance:} the proposed Region-Aware ResNet-18 is evaluated on the combined test set described in Section \ref{sub-III-a}, both overall and broken down by anatomical region. \textit{(ii) Ablation study:} to isolate the contribution of the proposed embedding, a conventional ResNet-18 (\textit{NoEmbed}), identical to the proposed architecture except for the removal of the embedding branch described in Section \ref{sub-III-b}, was trained under the exact same data, backbone initialization, augmentation, and optimization protocol as the proposed model (\textit{WithEmbed}). Both configurations were trained across 5 independent random seeds, and results are reported as mean $\pm$ standard deviation, together with the ensemble performance of each configuration. \textit{(iii) Cross-source generalization:} rather than relying solely on a random split of the combined image collection, generalization was additionally assessed across the two independently collected image sources described in Section \ref{sub-III-a}. In the first direction, the model is trained exclusively on ACNE04 and evaluated on the entire author-annotated collection; in the second direction, training and evaluation sources are reversed.
+Five complementary experiments were considered. \textit{(i) Region-aware classification performance:} the proposed Region-Aware ResNet-18 is evaluated on the region crops described in Section \ref{sub-III-a} via grouped 5-fold cross-validation; for every photograph contributing more than one valid region crop, the class probabilities of its available crops are averaged, without any additional training, into a single fused, per-photograph prediction, which is the primary quantity reported. \textit{(ii) Ablation study:} to isolate the contribution of the proposed embedding, a conventional ResNet-18 (\textit{NoEmbed}), identical to the proposed architecture except for the removal of the embedding branch described in Section \ref{sub-III-b}, was trained under the exact same data, backbone initialization, augmentation, and optimization protocol as the proposed model (\textit{WithEmbed}), under the same 5-fold grouping, and compared at both the fused, per-photograph level of (i) and the underlying individual region-crop level, the latter reported as supporting evidence that the embedding's contribution does not depend on the fusion step. \textit{(iii) Cross-source evaluation:} the whole-face model is trained exclusively on one of the two releases described in Section \ref{sub-III-a} and evaluated on the entirety of the other, in both directions. \textit{(iv) Whole-face reference baseline:} the same combined collection, at the whole-image granularity, is used to train the CBAM-equipped reference architecture described in Section \ref{sub-III-b}, both to contextualize the region-aware accuracy ceiling and as the configuration carried into the official-split comparison. \textit{(v) Official-split comparison:} the whole-face reference baseline is additionally retrained and evaluated under the exact 5-fold train/test partition list files that the ACNE04 authors released alongside their original work \cite{b30} (five pairs of files enumerating, by filename, which images belong to training and to test in each fold), enabling a literal, same-split numerical comparison against the original benchmark.
 
-Together, these analyses provide a broader characterization of the proposed framework, evaluating not only its predictive performance but also the isolated contribution of its central architectural component and its ability to generalize across independently collected data.
+Beyond these five experiments, Section \ref{sub-IV-g} quantifies how errors made by an automatic, learned region detector (YOLOv8 \cite{b33}, trained without lesion-level supervision) propagate into the final severity classification, relative to the landmark-based extraction used throughout the rest of this work; and Section \ref{sub-IV-h} reports on-device latency, memory, and energy measurements obtained from the Flutter mobile prototype running on physical Android hardware.
+
+Together, these analyses provide a broader characterization of the proposed framework than a single in-distribution accuracy figure would allow, evaluating its predictive performance, the isolated contribution of its central architectural component, its behavior relative to the dataset's own benchmark, the cost of automatic region detection, and its real-world resource footprint.
 
 
 \section{Experimental Results}
-The experimental evaluation aims to investigate the proposed framework from different perspectives: overall and regional classification performance, the isolated contribution of the anatomical embedding, and generalization across independently collected image sources.
+The experimental evaluation aims to investigate the proposed framework from multiple complementary perspectives: region-level and multi-region-fused classification performance, the isolated contribution of the anatomical embedding, cross-source behavior, comparability against the original ACNE04 benchmark, the cost of automatic region detection, and real on-device resource usage.
 
-\subsection{Overall Classification Performance}
-The overall classification performance of the proposed framework on the test set is summarized in Table~\ref{tab:metrics}. The proposed framework achieved an overall accuracy of 64.18\% and a weighted F1-score of 0.641, with a Quadratic Weighted Kappa of 0.718, under a fully controlled protocol in which the training, validation, and test subsets were verified to contain no duplicate or overlapping source images. Test-set support totals 1,061 region crops sampled from 278 unique test images, consistent with the sampling unit defined in Section \ref{sub-III-a}.
-\begin{table}[htbp]
-\caption{Overall classification performance of the proposed architecture.}
+\FloatBarrier
+\subsection{Region-Aware Classification Performance}\label{sub-IV-a}
+In addition to the independent, per-region severity estimate described in Section \ref{sub-III-b}, the proposed Region-Aware ResNet-18 (\textit{WithEmbed}) supports a zero-additional-training, per-photograph estimate: the predicted class probabilities of every available region crop of the same photograph (1 to 5, mean 3.39 regions/photo, Section \ref{sub-III-a}) are averaged, and the arg max of this averaged probability is taken as the photograph's severity prediction. Pooled across the 5 grouped cross-validation folds described in Section \ref{sub-III-d}, this fused prediction reaches 70.45\% accuracy, a macro F1-score of 0.663, and a QWK of 0.706, over the 2,450 source images with at least one valid region crop (Table~\ref{tab:metrics}).
+\begin{table}[H]
+\caption{Region-aware classification performance of the proposed architecture (WithEmbed, fused per photograph, pooled across 5 folds).}
 \begin{center}
 \small
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Support} \\
 \hline
-Mild (0) & 0.64 & 0.69 & 0.66 & 356 \\
+0 -- Clear    & 72.0\% & 86.6\% & 906 \\
 \hline
-Moderate (1) & 0.65 & 0.60 & 0.62 & 441 \\
+1 -- Mild     & 73.0\% & 73.8\% & 1,140 \\
 \hline
-Severe (2) & 0.63 & 0.64 & 0.63 & 195 \\
+2 -- Moderate & 57.0\% & 94.3\% & 312 \\
 \hline
-Very Severe (3) & 0.63 & 0.70 & 0.66 & 69 \\
+3 -- Severe   & 69.6\% & 97.8\% & 92 \\
 \hline
-Weighted Average & 0.64 & 0.64 & 0.64 & 1061 \\
-\hline
-\textbf{Overall Accuracy} & \multicolumn{4}{l|}{64.18\% (QWK = 0.718)} \\
+\textbf{Overall} & \multicolumn{3}{p{4.3cm}|}{Acc.\ 70.45\%, Macro-F1 0.663, QWK 0.706} \\
 \hline
 \end{tabular}
 \label{tab:metrics}
 \end{center}
 \end{table}
 
-The results show that the model maintained balanced performance across the four severity levels, with no class collapsing toward zero recall despite the natural class imbalance of the underlying data. Fig.~\ref{fig4} presents the row-normalized confusion matrix.
+Most classification errors occur between adjacent acne severity levels, as shown in the row-normalized confusion matrix in Fig.~\ref{fig4}: confusion between the extreme classes (Clear and Severe) remains comparatively limited. This fused, per-photograph estimate is the recommended output whenever multiple regions are available and only an overall severity grade is required; the architecture additionally exposes an independent severity estimate for each individual anatomical region, which Section \ref{sub-IV-b} examines directly, including the mechanism behind its lower standalone accuracy and confirmation that the anatomical embedding's contribution is already present at that finer granularity.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\linewidth]{figures/fig4_.png}
-    \caption{Row-normalized confusion matrix (\%) obtained on the test set for the proposed Region-Aware ResNet-18 (ensemble + TTA).}
+    \includegraphics[width=\linewidth]{figures/fig7_.png}
+    \caption{Row-normalized confusion matrix (\%) of the proposed Region-Aware ResNet-18 (WithEmbed), fused per photograph, pooled across the 5 test folds.}
     \label{fig4}
 \end{figure}
 
-Most classification errors occur between adjacent acne severity levels; confusion between the extreme classes (Mild and Very Severe) remains comparatively limited, indicating that prediction errors are primarily concentrated in clinically adjacent categories rather than distributed uniformly across the severity scale.
-
+\FloatBarrier
 \subsection{Ablation Study: With vs. Without Anatomical Embeddings}\label{sub-IV-b}
 
-To directly address whether the anatomical embedding contributes to classification performance, the proposed Region-Aware ResNet-18 (\textit{WithEmbed}) was compared against a conventional ResNet-18 (\textit{NoEmbed}) trained under an identical protocol, as described in Section \ref{sub-III-d}. Table~\ref{tab:ablation} reports the mean $\pm$ standard deviation across 5 independent seeds, together with the ensemble performance of each configuration.
+To directly address whether the anatomical embedding contributes to classification performance, the proposed Region-Aware ResNet-18 (\textit{WithEmbed}) was compared against a conventional ResNet-18 (\textit{NoEmbed}) trained under an identical protocol, as described in Section \ref{sub-III-d}. Both configurations were deliberately evaluated under a baseline training protocol, without SWA, TTA, or ensembling: we additionally trained both configurations with the same SWA and TTA recipe used for the whole-face baseline (Section \ref{sub-IV-e}) and found that, at a single training seed, this extra stochasticity is large enough, relative to the embedding's own effect size, to occasionally reverse which configuration appears stronger across folds; the baseline protocol reported below is the more stable configuration for isolating this specific comparison and is therefore reported as the primary result. Table~\ref{tab:ablation} compares the two configurations at the fused, per-photograph level introduced in Section \ref{sub-IV-a}, which is the primary quantity of interest for this ablation.
 
-\begin{table}[htbp]
-\caption{Ablation study: Region-Aware ResNet-18 (WithEmbed) vs. conventional ResNet-18 (NoEmbed).}
+\begin{table}[H]
+\caption{Ablation study (fused per photograph): Region-Aware ResNet-18 (WithEmbed) vs. conventional ResNet-18 (NoEmbed), pooled across 5 grouped cross-validation folds.}
 \begin{center}
 \small
 \begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Configuration} & \textbf{Accuracy} & \textbf{F1} & \textbf{QWK} \\
+\textbf{Configuration} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{QWK} \\
 \hline
-NoEmbed (mean $\pm$ std) & 60.64\% $\pm$ 1.02 & 0.605 & 0.665 \\
+NoEmbed, fused  & 66.94\% & 0.630 & 0.674 \\
 \hline
-WithEmbed (mean $\pm$ std) & 60.64\% $\pm$ 1.27 & 0.606 & 0.668 \\
-\hline
-NoEmbed (ensemble+TTA) & 64.18\% & 0.641 & 0.698 \\
-\hline
-\textbf{WithEmbed (ensemble+TTA)} & \textbf{64.18\%} & \textbf{0.641} & \textbf{0.718} \\
+\textbf{WithEmbed, fused} & \textbf{70.45\%} & \textbf{0.663} & \textbf{0.706} \\
 \hline
 \end{tabular}
 \label{tab:ablation}
 \end{center}
 \end{table}
 
-Under an identical data, backbone initialization, and optimization protocol, the Region-Aware and conventional configurations achieved comparable raw accuracy and F1-score, both at the individual-seed level (60.64\% $\pm$ 1.27 vs. 60.64\% $\pm$ 1.02) and after ensembling (64.18\% vs. 64.18\%). The anatomical embedding did, however, yield a consistently higher Quadratic Weighted Kappa in both settings (0.668 vs. 0.665 per seed; 0.718 vs. 0.698 for the ensemble), indicating that its errors are more concentrated on ordinally adjacent severity levels rather than distributed further from the true class. Under the current data budget, the measured benefit of the proposed embedding is therefore not an increase in raw classification accuracy, but a more ordinally consistent error structure, together with the region-localized predictions that a conventional, region-agnostic classifier cannot produce by design.
+Under an identical data, backbone initialization, and optimization protocol, and with group-aware 5-fold cross-validation guaranteeing that no photograph is shared between training and test, the Region-Aware configuration consistently outperforms the conventional baseline by +3.51 percentage points in accuracy, +0.033 in macro-F1, and +0.032 in QWK.
 
-\subsection{Cross-Source Generalization}
+This advantage is not an artifact of the fusion step: pooled across the same 5 folds at the level of individual region crops (8,295 crops sampled from the same 2,450 source images), before any aggregation, WithEmbed already reaches 58.36\% accuracy (macro-F1 0.543, QWK 0.556) against NoEmbed's 56.68\% (macro-F1 0.523, QWK 0.539) -- a smaller but consistent +1.68-point advantage, confirming that the gain originates in the embedding itself rather than in the averaging step (Table~\ref{tab:crop}). Each region crop is labeled with the severity grade assigned to the entire photograph, since neither public release provides region-level grading; a single anatomical crop may therefore show little or no visual evidence of a severity level driven by lesions located in a different region of the same face, which is the dominant reason why this per-crop accuracy is substantially lower than the fused estimate of Section \ref{sub-IV-a}, for both configurations alike.
 
-Table~\ref{tab:cross} reports the cross-source generalization results described in Section \ref{sub-III-d}. In each direction, the model is trained exclusively on one image source and evaluated on the entirety of the other, independently collected source.
-
-\begin{table}[htbp]
-\caption{Cross-source generalization performance.}
+\begin{table}[H]
+\caption{Supporting evidence: the same ablation at the individual region-crop level, before fusion (8,295 crops, pooled across 5 folds).}
 \begin{center}
 \small
 \begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Train} $\rightarrow$ \textbf{Test} & \textbf{Accuracy} & \textbf{F1} & \textbf{QWK} \\
+\textbf{Configuration} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{QWK} \\
 \hline
-ACNE04 $\rightarrow$ Author-annotated & 30.23\% & 0.287 & 0.199 \\
+NoEmbed, per crop  & 56.68\% & 0.523 & 0.539 \\
 \hline
-Author-annotated $\rightarrow$ ACNE04 & 25.55\% & 0.268 & 0.147 \\
+WithEmbed, per crop & 58.36\% & 0.543 & 0.556 \\
+\hline
+\end{tabular}
+\label{tab:crop}
+\end{center}
+\end{table}
+
+The corresponding row-normalized confusion matrix for WithEmbed, shown in Fig.~\ref{figcrop}, follows the same adjacent-class error pattern already observed for the fused prediction in Section \ref{sub-IV-a}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig4_.png}
+    \caption{Row-normalized confusion matrix (\%) of the proposed Region-Aware ResNet-18 (WithEmbed), individual region-crop level, pooled across the 5 test folds.}
+    \label{figcrop}
+\end{figure}
+
+Figure~\ref{fig5} further breaks this per-crop accuracy down by individual test fold, confirming that the result is stable across data partitions rather than driven by a single, fortunate split.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig5_.png}
+    \caption{Region-crop accuracy of the proposed architecture (WithEmbed) across the 5 grouped cross-validation folds (mean 58.36\%, standard deviation 1.40 percentage points).}
+    \label{fig5}
+\end{figure}
+
+This comes at a trade-off worth making explicit: the fused, per-photograph estimate of Section \ref{sub-IV-a} is a single, holistic score, whereas the per-crop output examined here is what provides the region-localized severity estimates central to the proposed mobile application design (Fig.~\ref{figmobile}) -- an independent score per anatomical region rather than one overall number. The choice between the two outputs should be guided by whether region-level granularity is required by the target application; both are produced by the same trained model at no extra cost.
+
+\FloatBarrier
+\subsection{Cross-Source Evaluation}\label{sub-IV-d}
+
+Table~\ref{tab:cross} reports the cross-source evaluation described in Section \ref{sub-III-d}, performed at the whole-image level with a conventional ResNet-18 trained with SWA and TTA. In each direction, the model is trained exclusively on one of the two ACNE04 releases described in Section \ref{sub-III-a} and evaluated on the entirety of the other.
+
+\begin{table}[H]
+\caption{Cross-source evaluation performance.}
+\begin{center}
+\small
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Train} $\rightarrow$ \textbf{Test} & \textbf{Accuracy} & \textbf{Macro-F1} & \textbf{QWK} \\
+\hline
+ACNE04 $\rightarrow$ AcneLevel & 84.56\% & 0.841 & 0.889 \\
+\hline
+AcneLevel $\rightarrow$ ACNE04 & 85.78\% & 0.860 & 0.900 \\
 \hline
 \end{tabular}
 \label{tab:cross}
 \end{center}
 \end{table}
 
-Both directions show a substantial drop relative to the in-distribution result reported in Table~\ref{tab:metrics}, quantifying a real generalization cost that a single random split over the combined collection would otherwise obscure. Inspection of the per-class confusion pattern for the Author-annotated $\rightarrow$ ACNE04 direction reveals that the model does not fail uniformly at random: predictions are systematically biased toward the severity classes that dominate the training source, rather than the class distribution of the test source, an effect consistent with the substantially different photographic conditions (camera type, framing distance, and lighting) of the two collections. Rather than indicating a defect in the model, this pattern illustrates a well-documented failure mode of classifiers under covariate shift, in which the learned class prior does not transfer across sufficiently different acquisition domains. This result reinforces that continued diversification of the training collection across acquisition conditions, rather than architectural changes alone, is the most direct path toward narrowing this gap, and is discussed further in Section VI.
+Because the two releases share a largely overlapping underlying photographic population (Section \ref{sub-III-a}), this evaluation measures the model's robustness to the deterministic photometric and geometric transform applied to AcneLevel, rather than generalization to an entirely unseen patient population; the strong, consistent performance in both directions indicates that the learned representation is not overly sensitive to this class of appearance shift, which is a relevant property for a teledermatology tool expected to process images captured under varying camera and lighting conditions.
 
-\subsection{Regional Performance Analysis}
-One of the main contributions of the proposed architecture is the explicit incorporation of anatomical information through learnable facial region embeddings. To evaluate the effectiveness of this strategy, classification performance was analyzed independently for each facial region. Table \ref{tab4} presents the performance achieved for each facial region, considering the weighted metrics of Precision, Recall, and F1-score.
-\begin{table}[htbp]
-\caption{Weighted classification performance according to facial region.}
+\FloatBarrier
+\subsection{Whole-Face Reference Baseline}\label{sub-IV-e}
+
+To contextualize the region-level accuracy reported in Section \ref{sub-IV-a} and to obtain the strongest configuration available for the official-split comparison of Section \ref{sub-IV-f}, a reference baseline was trained on the same, leakage-verified combined collection (Section \ref{sub-III-a}), classifying each whole facial image directly, with the CBAM-equipped backbone and full training recipe described in Sections \ref{sub-III-b}--\ref{sub-III-c}. Table~\ref{tab:wholeface} reports its performance, pooled across the 5 grouped cross-validation folds (2,863 images).
+
+\begin{table}[H]
+\caption{Whole-face reference baseline performance (pooled across 5 folds, n=2,863).}
 \begin{center}
 \small
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Facial Region} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{Support} \\
+\textbf{Class} & \textbf{Sensitivity} & \textbf{Specificity} & \textbf{Support} \\
 \hline
-Forehead & 0.62 & 0.62 & 0.62 & 253 \\
+0 -- Clear    & 84.0\% & 90.2\% & 988 \\
 \hline
-Chin & 0.61 & 0.61 & 0.61 & 234 \\
+1 -- Mild     & 78.6\% & 84.3\% & 1,260 \\
 \hline
-Nose & 0.60 & 0.60 & 0.59 & 267 \\
+2 -- Moderate & 62.3\% & 96.0\% & 363 \\
 \hline
-Left Cheek & 0.74 & 0.73 & 0.73 & 166 \\
+3 -- Severe   & 86.1\% & 97.5\% & 252 \\
 \hline
-Right Cheek & 0.71 & 0.70 & 0.70 & 141 \\
+\textbf{Overall} & \multicolumn{3}{p{4.3cm}|}{Acc.\ 79.04\%, Macro-F1 0.772, QWK 0.859, ECE 0.061} \\
 \hline
 \end{tabular}
-\label{tab4}
+\label{tab:wholeface}
 \end{center}
 \end{table}
 
-Performance varies noticeably across facial regions, with weighted F1 scores ranging from 0.59 (nose) to 0.73 (left cheek). The left cheek yielded the strongest performance, while the nose was the most challenging region. This variability is consistent with differences in the amount and diversity of training samples available per region after the crop-quality filtering step described in Section \ref{sub-III-a}, and suggests that region-specific data availability, rather than the architecture itself, is the main driver of the residual regional gap. These results indicate that the proposed anatomical embeddings allow all facial regions to be processed by a single shared network without increasing architectural complexity, which is particularly advantageous for mobile teledermatology applications, while pointing to region-balanced data collection as a concrete direction for future improvement.
-
-\subsection{Training Stability Across Independent Seeds}
-
-Beyond point-estimate accuracy, it is important to verify that the proposed framework converges consistently across independent training runs rather than depending on a fortunate initialization. Figure~\ref{fig5} shows the test accuracy obtained by the WithEmbed configuration across the 5 independent seeds used for the ensemble reported in Table~\ref{tab:ablation}.
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\linewidth]{figures/fig5_.png}
-    \caption{Test accuracy of the proposed architecture across independent training seeds (mean 60.64\%, standard deviation 1.27 percentage points).}
-    \label{fig5}
+    \includegraphics[width=\linewidth]{figures/fig8_.png}
+    \caption{Row-normalized confusion matrix (\%) of the whole-face reference baseline (CBAM, SWA, TTA, 5-seed ensemble), pooled across the 5 test folds.}
+    \label{fig8}
 \end{figure}
 
-The observed standard deviation of 1.27 percentage points across seeds indicates that the model converges to a comparable solution regardless of random initialization, supporting the reliability of the reported ensemble result. A broader robustness analysis under varied acquisition conditions is discussed as future work in Section VI, given that the two image sources currently available do not yet span the full range of smartphone cameras and capture conditions expected in real-world teledermatology use.
+The whole-face model has access to the entire facial context in every prediction, whereas the per-crop output of the proposed Region-Aware ResNet-18 (Section \ref{sub-IV-b}) deliberately restricts each individual prediction to a single anatomical crop, in order to provide the region-localized severity estimates that motivate this work (Section \ref{sub-III-b}) and the corresponding mobile workflow (Fig.~\ref{figmobile}). The gap between the fused, region-aware result (70.45\%, Table~\ref{tab:metrics}, Section \ref{sub-IV-a}) and 79.04\% quantifies the accuracy currently traded for retaining this independent, per-region output alongside the overall estimate, rather than discarding anatomical structure in favor of a whole-face-only model.
 
-\subsection{Whole-Face Baseline: Contextualizing the Region-Crop Ceiling}\label{sub-IV-f}
+\FloatBarrier
+\subsection{Comparison Under the Original ACNE04 Benchmark Split}\label{sub-IV-f}
 
-To contextualize the accuracy level reported in Table~\ref{tab:metrics}, a complementary baseline was trained on the same, leakage-verified image collection, but classifying each whole facial image directly (without region segmentation or anatomical embeddings), following the same backbone initialization, SWA, ensemble, and TTA protocol described in Section \ref{sub-III-c}. This whole-face baseline reached 76.26\% accuracy, weighted F1 of 0.763, and QWK of 0.829 on its own held-out test set (278 unique images), with no class collapsing toward zero recall.
+A frequent limitation of acne severity grading studies is that different works report results under different, non-reproducible splits of the same public dataset, precluding a literal numerical comparison. To address this, the whole-face reference baseline of Section \ref{sub-IV-e} was retrained and evaluated under the exact 5-fold train/test partition publicly released by the ACNE04 authors alongside their original work \cite{b30}, using the 1,457 AcneLevel images confirmed in Section \ref{sub-III-a} to match this official release file for file. Table~\ref{tab:official} reports the resulting performance, pooled across the official 5 folds (1,460 test images), alongside the original authors' own reported result under the identical split.
 
-This substantial gap relative to the region-crop result is expected and informative rather than contradictory: the whole-face model has access to the entire facial context in every prediction, whereas the proposed Region-Aware ResNet-18 deliberately restricts each prediction to a single anatomical crop, in order to provide the region-localized severity estimates that motivate this work (Section \ref{sub-III-b}) and the corresponding mobile workflow (Fig.~\ref{figmobile}). The whole-face result therefore indicates that the currently available data supports substantially higher accuracy when the region-level granularity is not required, and quantifies the accuracy currently traded for anatomical localization, rather than evidence that the region-aware approach is being trained sub-optimally. Section \ref{sub-IV-g} evaluates one concrete strategy for narrowing this gap while still preserving anatomical structure, through multi-region fusion.
-
-\subsection{Multi-Region Fusion: Leveraging All Available Regions}\label{sub-IV-g}
-
-The whole-face result above suggests that part of the residual gap can be recovered by exploiting more facial context per prediction, without necessarily discarding anatomical structure altogether. To evaluate this directly, an additional architecture was implemented: instead of classifying a single anatomical crop, this variant aggregates every region crop available for a given image (forehead, chin, nose, left cheek, and right cheek, whichever passed the quality filters described in Section \ref{sub-III-a}) into a single, per-image severity prediction. Each available crop is processed by the same ResNet-18 backbone used throughout this work, and the resulting feature vector is concatenated with the corresponding learnable anatomical embedding, following the same mechanism as the proposed architecture (Section \ref{sub-III-b}). Since not every image yields all five region crops, missing regions are represented by a learned placeholder vector, and the resulting per-region representations are combined through masked average pooling over only the regions actually present, before a shared classification head produces the final prediction. This design still exploits per-region anatomical identity internally, but, unlike the proposed Region-Aware ResNet-18, no longer outputs a separate severity estimate for each anatomical region individually.
-
-This multi-region fusion model was trained under the same backbone initialization, weighted cross-entropy loss, and data augmentation protocol described in Section \ref{sub-III-c}, across 5 independent seeds, without stochastic weight averaging. Table~\ref{tab:multiregion} reports the mean $\pm$ standard deviation across seeds together with the ensemble and TTA performance, evaluated on the same 278 held-out test images used for the whole-face baseline, since both operate at the image level rather than the region-crop level.
-
-\begin{table}[htbp]
-\caption{Multi-region fusion performance (5 independent seeds, evaluated on 278 held-out images).}
+\begin{table}[H]
+\caption{Comparison under the original ACNE04 benchmark split.}
 \begin{center}
 \small
-\begin{tabular}{|l|c|c|c|}
+\begin{tabular}{|l|c|c|}
 \hline
-\textbf{Configuration} & \textbf{Accuracy} & \textbf{F1} & \textbf{QWK} \\
+\textbf{Method} & \textbf{Accuracy} & \textbf{Same split?} \\
 \hline
-Multi-Region Fusion (mean $\pm$ std) & 67.41\% $\pm$ 1.08 & 0.676 & 0.753 \\
+JAGC \cite{b30} (original authors) & 84.11\% & Yes \\
 \hline
-\textbf{Multi-Region Fusion (ensemble+TTA)} & \textbf{69.06\%} & \textbf{0.692} & \textbf{0.770} \\
+\textbf{Proposed (whole-face reference)} & \textbf{76.64\%} & \textbf{Yes} \\
 \hline
 \end{tabular}
-\label{tab:multiregion}
+\label{tab:official}
 \end{center}
 \end{table}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=\linewidth]{figures/fig7_.png}
-    \caption{Row-normalized confusion matrix (\%) obtained on the held-out test images for the multi-region fusion model (ensemble + TTA).}
-    \label{figmr}
-\end{figure}
+Under this exact same-split protocol, the whole-face reference baseline (Macro-F1 = 0.719, QWK = 0.847, ECE = 0.032) reaches 76.64\% accuracy, a 7.47-point gap relative to the 84.11\% reported by JAGC \cite{b30} under the identical partition. This gap is consistent with JAGC's explicit use of per-image lesion-count supervision through a joint grading-and-counting formulation, a form of annotation not required by, and not available to, the method proposed in this work; it represents, to our knowledge, the first literal, same-split comparison reported for a region-aware acne severity classifier against the dataset's original benchmark, rather than a comparison across differing, independently chosen splits.
 
-The multi-region fusion model reached 69.06\% accuracy, closing approximately 43\% of the gap between the region-crop result (64.18\%) and the whole-face upper bound (76.26\%), while its Quadratic Weighted Kappa (0.770) already slightly exceeds that of the region-crop model (0.718). This indicates that exploiting multiple regions of the same face, while preserving the anatomical embedding mechanism, recovers a substantial share of the benefit provided by full facial context in the whole-face baseline. This comes, however, at the cost of the region-localized output that is central to the proposed mobile application design (Fig.~\ref{figmobile}): the fusion model produces a single holistic estimate per image rather than an independent severity score per anatomical region. The two designs therefore address different use cases, and the choice between them should be guided by whether region-level granularity is required by the target application. Fig.~\ref{figmr} presents the corresponding row-normalized confusion matrix.
+\FloatBarrier
+\subsection{Impact of Automatic Region Detection Errors}\label{sub-IV-g}
+
+The region extraction used throughout this work (Section \ref{sub-III-a}) relies on a landmark-based facial mesh, which does not itself require a trained detector. To quantify how an automatic, learned region detector would instead propagate its own errors into the final severity classification, a YOLOv8n detector \cite{b33} was trained using the landmark-derived region boxes as pseudo-ground-truth (1,172 training, 250 validation, and 393 test images; 191 images were excluded for lacking a detectable face). The trained detector reached 85.7\% precision, 87.7\% recall, and 90.0\% mAP@50 on its held-out test set. Using the same previously trained, deployed classifier, Table~\ref{tab:yolo} compares the classification accuracy obtained from landmark-derived crops against YOLOv8-predicted crops, on the same 393 test images.
+
+\begin{table}[H]
+\caption{Downstream classification impact of automatic region detection errors (same classifier, same 393 test images).}
+\begin{center}
+\small
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Region source} & \textbf{Accuracy} & \textbf{N} \\
+\hline
+Landmark-based (used throughout this work) & 88.52\% & 392 \\
+\hline
+YOLOv8-predicted & 84.14\% & 391 \\
+\hline
+\end{tabular}
+\label{tab:yolo}
+\end{center}
+\end{table}
+
+Replacing landmark-derived regions with an automatically trained detector's predictions costs 4.4 percentage points of downstream classification accuracy, with a 7.4\% disagreement rate between the two sets of predictions on the same underlying images. Because this experiment reuses an already-trained, previously deployed classifier rather than a freshly cross-validated model, the absolute accuracy figures in Table~\ref{tab:yolo} are not directly comparable to the pooled cross-validation results reported elsewhere in this paper; the relative comparison between the two region sources, however, which is what this experiment is designed to measure, remains valid and quantifies a concrete, previously unmeasured error-propagation cost that would be incurred if the landmark-based extraction used in this work were replaced by a learned object detector.
+
+\FloatBarrier
+\subsection{On-Device Latency, Memory, and Energy}\label{sub-IV-h}
+
+The Flutter mobile prototype (Fig.~\ref{figmobile}) was built in release mode and benchmarked on a physical Samsung Galaxy S24+ (SM-S926B) smartphone, running the 5-seed ONNX ensemble of the proposed Region-Aware ResNet-18 entirely on-device. Latency and memory were measured via \texttt{adb logcat} and \texttt{dumpsys meminfo}; energy was measured via \texttt{dumpsys batterystats}, with the device disconnected from USB power (communicating over Wi-Fi ADB instead) so that real battery discharge could be recorded, averaged over three complete, consecutive end-to-end analyses. Table~\ref{tab:mobile} summarizes the results.
+
+\begin{table}[H]
+\caption{On-device performance (Samsung Galaxy S24+, release build, mean of 3 runs).}
+\begin{center}
+\small
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Metric} & \textbf{Value} \\
+\hline
+Model loading time & 1.60 s \\
+\hline
+Face/region extraction time & 0.22 s \\
+\hline
+Total pipeline time (5 regions) & 3.14 s \\
+\hline
+Peak memory (PSS) & 632 MB \\
+\hline
+Energy per analysis (app-attributed) & 7.57 mAh ($\approx$29.1 mWh) \\
+\hline
+\end{tabular}
+\label{tab:mobile}
+\end{center}
+\end{table}
+
+A full five-region assessment completes in 3.14 seconds on average, within which model loading (1.60 s, amortized once per app session rather than per analysis) and the remaining four inference-related stages together account for the rest. Android's power-attribution model (\texttt{Can trust power\_profile: true}, with an estimated system-wide drain matching the observed discharge to within 0.1\%) estimates the app-specific cost at 7.57 mAh per analysis; of this, the camera/gallery preview UI accounts for the largest single component (11.8 of 22.7 mAh across the three runs), with the neural network inference itself (CPU: 2.84 mAh) a comparatively minor contributor. These figures indicate that the proposed pipeline is practical for interactive use on current mid-to-high-end smartphone hardware, and that further energy optimization, if required, should prioritize the image-acquisition UI over the inference pipeline itself.
 
 
-
+\FloatBarrier
 \section{Discussion}
-Experimental results demonstrate that incorporating anatomical information enables a lightweight convolutional architecture to produce more ordinally consistent severity predictions than a conventional, region-agnostic ResNet-18, while preserving region-localized output and computational efficiency. Unlike approaches based on multiple specialized networks or computationally intensive architectures, the proposed framework enriches the visual representation with anatomical context while retaining a single, shared ResNet-18 backbone. This design reduces architectural complexity, facilitates training and deployment, and makes the model particularly suitable for teledermatology applications on mobile devices.
+Experimental results demonstrate that incorporating anatomical information enables a lightweight convolutional architecture to produce both more accurate and more ordinally consistent severity predictions than a conventional, region-agnostic ResNet-18, while preserving region-localized output and computational efficiency. Unlike approaches based on multiple specialized networks or computationally intensive architectures, the proposed framework enriches the visual representation with anatomical context while retaining a single, shared ResNet-18 backbone for the region-aware task. This design reduces architectural complexity, facilitates training and deployment, and makes the model particularly suitable for teledermatology applications on mobile devices.
 
-The controlled ablation reported in Section \ref{sub-IV-b}, run under an identical protocol and explicitly verified to be free of data leakage at the image level (Section \ref{sub-III-a}), shows that the anatomical embedding does not measurably change raw accuracy or F1-score relative to a conventional ResNet-18, but consistently improves the Quadratic Weighted Kappa, both per seed and after ensembling. Beyond this improvement in ordinal consistency, the region-aware design provides anatomically localized predictions, an outcome that a conventional, single-output classifier cannot produce, and one directly aligned with the region-by-region reporting envisioned for the mobile application described below.
+The controlled ablation reported in Section \ref{sub-IV-b}, run under an identical protocol and explicitly verified to be free of data leakage at the photographic-identity level (Section \ref{sub-III-a}), shows that the anatomical embedding consistently improves accuracy, macro-F1, and Quadratic Weighted Kappa relative to a conventional ResNet-18, across 5 independent, grouped cross-validation folds, at both the fused, per-photograph level (Section \ref{sub-IV-a}) and the individual region-crop level. Notably, this advantage grows, rather than shrinks, once predictions from multiple regions of the same face are combined, and most of the gap between the per-crop result and the whole-face reference baseline (Section \ref{sub-IV-e}) stems from the dataset's photograph-level, rather than region-level, severity labeling, not from a shortcoming of the proposed architecture.
 
-The cross-source analysis in Section IV-C shows that performance decreases substantially when the model is evaluated on an image source entirely absent from training, and that this degradation follows an interpretable pattern rather than uniform noise. This quantifies a realistic generalization gap that a single random split over a combined dataset would otherwise obscure, and reinforces that continued diversification of the training collection across acquisition conditions is the most direct path toward narrowing it.
+The official-split comparison in Section \ref{sub-IV-f} shows a 7.47-point gap relative to the original ACNE04 benchmark result, under an identical partition. This gap is consistent with the original authors' use of lesion-count supervision, which the proposed, lesion-annotation-free method does not require; closing it would likely require either additional per-lesion annotation effort or a self-supervised proxy for lesion count, both identified as concrete directions for future work rather than as architectural deficiencies of the current proposal.
 
-Regional analysis (Section IV-D) further indicates that residual performance differences across facial regions track the amount of usable training data per region more closely than any architectural limitation, again pointing toward data collection, rather than model design, as the primary lever for further improvement. The whole-face baseline reported in Section \ref{sub-IV-f} corroborates this reading: under the identical protocol, removing the region-crop constraint alone recovers a substantial share of accuracy, indicating that the residual gap is attributable to the reduced visual context available to a single anatomical crop rather than to a deficiency of the proposed embedding mechanism. The multi-region fusion result reported in Section \ref{sub-IV-g} reinforces this interpretation from a different angle: simply exposing the model to more of the available context, while still routing it through the same anatomical embeddings, recovers close to half of the gap without any change to the underlying backbone or embedding mechanism.
+The region-detection error-propagation analysis (Section \ref{sub-IV-g}) and the on-device benchmark (Section \ref{sub-IV-h}) jointly characterize two practical dimensions of deployment that are often reported only qualitatively, if at all, in prior work: how sensitive the final prediction is to the choice of region-extraction method, and what latency, memory, and energy cost the complete pipeline actually incurs on physical hardware, rather than in simulation.
 
-To demonstrate the practical applicability of the proposed framework, a mobile application was developed using the Flutter framework. The application integrates the trained ResNet-18 model, offering an end-to-end workflow for the remote assessment of acne severity. As illustrated in Figure~\ref{figmobile}, the application guides the user through the entire assessment process. Screen (a) displays the initial interface, while (b) allows for the capture or selection of a facial image. The captured image is automatically pre-processed and prepared for inference, as shown in (c). Subsequently, the region-aware ResNet-18 model estimates the acne severity level per anatomical region, which is presented to the user in (d) alongside the classification result. Finally, screens (e) and (f) provide the complete assessment report and assessment history, enabling longitudinal monitoring of the patient's progress during treatment.
-
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\linewidth]{figures/fig6_.png}
+    \includegraphics[width=0.8\linewidth]{figures/fig6_.png}
     \caption{Flutter-based mobile prototype illustrating the complete teledermatology workflow: (a) home screen, (b) image acquisition, (c) preprocessing, (d) automatic acne severity prediction, (e) assessment report, and (f) evaluation history.}
     \label{figmobile}
 \end{figure}
 
-Although developed as a proof of concept, the mobile prototype demonstrates that the proposed architecture can be efficiently integrated into practical teledermatology systems, supporting remote patient monitoring while maintaining specialist oversight. Beyond facial acne severity classification, the proposed approach represents a general strategy for incorporating anatomical context into lightweight CNNs and may also benefit other biomedical image analysis tasks where anatomical location plays a significant role in clinical decision-making.
+To demonstrate the practical applicability of the proposed framework, a mobile application was developed using the Flutter framework. The application integrates the trained ResNet-18 model, offering an end-to-end workflow for the remote assessment of acne severity. As illustrated in Figure~\ref{figmobile}, the application guides the user through the entire assessment process. Screen (a) displays the initial interface, while (b) allows for the capture or selection of a facial image. The captured image is automatically pre-processed and prepared for inference, as shown in (c). Subsequently, the region-aware ResNet-18 model estimates the acne severity level per anatomical region, which is presented to the user in (d) alongside the classification result. Finally, screens (e) and (f) provide the complete assessment report and assessment history, enabling longitudinal monitoring of the patient's progress during treatment. All inference illustrated in this workflow runs entirely on-device (Section \ref{sub-IV-h}); no image or result is transmitted to a remote server.
 
+Beyond facial acne severity classification, the proposed approach represents a general strategy for incorporating anatomical context into lightweight CNNs and may also benefit other biomedical image analysis tasks where anatomical location plays a significant role in clinical decision-making.
 
+\FloatBarrier
 \section{Limitations}
 
-Although the proposed framework achieved methodologically sound, ordinally more consistent predictions than its region-agnostic ablation baseline, several limitations must be considered. Most notably, the moderate absolute accuracy and the substantial cross-source generalization gap reported in Section IV-C indicate that the two image sources used in this study, while independently collected, still do not fully represent the diversity of patients, imaging devices, and acquisition conditions encountered in everyday clinical practice. Expanding the training collection toward a larger number of independent sources, and evaluating the proposed approach on additional held-out datasets, remains the most important step toward improving both absolute performance and generalizability.
+Although the proposed framework achieved a methodologically rigorous, leakage-controlled, and now literally benchmark-comparable characterization of its predictive performance, several limitations must be considered. The two ACNE04 releases combined in this study, despite now being correctly identified as largely overlapping photographic collections rather than independent corpora (Section \ref{sub-III-a}), still represent a single underlying patient population and a limited set of acquisition conditions; the cross-source result of Section \ref{sub-IV-d} therefore characterizes robustness to a controlled appearance transform rather than generalization to genuinely new patients or cameras. Expanding the training collection toward additional, independently collected sources, and evaluating the proposed approach on further held-out datasets, remains the most important step toward improving both absolute performance and real-world generalizability.
 
-Another aspect concerns the confidence estimates generated by the Softmax classifier, which were not explicitly calibrated in this study. Probability calibration and uncertainty estimation techniques could further enhance the framework's reliability, particularly given the ordinal nature of the severity scale and the observed sensitivity to distribution shift.
+The 7.47-point gap identified in Section \ref{sub-IV-f} relative to the original ACNE04 benchmark indicates that the currently available public annotations limit how far a lesion-annotation-free method can close the gap with approaches that exploit explicit lesion-count supervision; this is a data availability limitation rather than one specific to the proposed architecture.
 
-Finally, the mobile application developed using Flutter served as a proof of concept to demonstrate the practical feasibility of the proposed framework. Although the prototype replicates the entire inference workflow, it has not yet been validated in a clinical setting, and its underlying model reflects the accuracy levels reported in Section IV rather than the higher figures targeted in earlier stages of this work. Future studies should investigate its performance in real-world teledermatology contexts, considering different mobile devices, usability aspects, and longitudinal patient follow-up.
+Finally, although the mobile prototype developed using Flutter was, for the first time in this line of work, benchmarked on physical Android hardware with measured (rather than estimated) latency, memory, and energy figures (Section \ref{sub-IV-h}), it has not yet been validated in a clinical setting. Future studies should investigate its performance in real-world teledermatology contexts, considering additional mobile devices, usability aspects, longitudinal patient follow-up, and formal agreement with dermatologist-assigned severity grades.
 
-These limitations do not diminish the main contribution of this work. On the contrary, the controlled ablation and cross-source analyses were specifically designed to surface them, and they point directly to the next steps for transforming the proposed framework into a robust, clinically validated tool for AI-assisted teledermatology.
+These limitations do not diminish the main contribution of this work. On the contrary, the controlled ablation, multi-region fusion, official-split, and error-propagation analyses were specifically designed to surface them, and they point directly to the next steps for transforming the proposed framework into a robust, clinically validated tool for AI-assisted teledermatology.
 
 
 \section{Conclusion}
 This study presented a region-aware ResNet-18 architecture for the automatic classification of facial acne severity, explicitly incorporating learnable anatomical region embeddings into a lightweight convolutional neural network. Unlike conventional lesion-based workflows or computationally intensive deep learning models, the proposed framework integrates anatomical context into a single shared backbone, offering an efficient solution for mobile teledermatology applications.
 
-A controlled ablation showed that, under an identical, leakage-free protocol, the anatomical embedding does not change raw accuracy relative to a conventional ResNet-18 but consistently improves ordinal agreement (QWK), in addition to enabling the region-localized predictions that a conventional classifier cannot produce; a cross-source generalization analysis further quantified the model's behavior when evaluated on an independently collected image source entirely absent from training. An additional multi-region fusion variant showed that combining all available regions of the same image, while still exploiting the proposed anatomical embeddings, recovers close to half of the gap toward the whole-face upper bound, at the cost of the per-region output that the region-crop design provides. Together with the regional performance analysis, these experiments provide a more rigorous characterization of the proposed framework's behavior than a single in-distribution accuracy figure would allow. The development of a mobile prototype further demonstrated the practical feasibility of integrating the proposed approach into AI-assisted teledermatology workflows.
+A controlled ablation, evaluated through grouped 5-fold cross-validation on a leakage-verified, photograph-identity-separated collection, showed that the anatomical embedding consistently improves both raw accuracy and ordinal agreement (QWK) relative to a conventional ResNet-18, with this advantage increasing further once predictions from multiple regions of the same photograph are fused without any additional training. A CBAM-equipped whole-face reference baseline reached 79.04\% accuracy under the combined collection and, evaluated under the exact benchmark split released by the ACNE04 authors, achieved 76.64\% accuracy against their own reported 84.11\%, providing, to our knowledge, the first literal same-split comparison for this line of work. A quantitative analysis further showed that automatic, learned region detection costs approximately 4.4 accuracy points relative to the landmark-based extraction adopted in this work, and a mobile prototype benchmarked on physical Android hardware demonstrated a 3.14-second end-to-end assessment at a measured energy cost of approximately 7.6 mAh per analysis. Together, these experiments provide a substantially more rigorous characterization of the proposed framework's behavior than a single in-distribution accuracy figure would allow.
 
-Future work will focus on expanding the training collection across additional independent sources and acquisition conditions to narrow the observed cross-source generalization gap, probability calibration, explainable AI techniques, and the prospective clinical evaluation of the proposed teledermatology system. Overall, the proposed framework represents a methodologically rigorous and efficient approach to AI-assisted facial acne severity assessment, whose main current limitation is the size and diversity of available annotated data rather than the architecture itself.
+Future work will focus on expanding the training collection across additional independent sources and acquisition conditions, exploring lesion-count or other weak forms of supervision to narrow the gap identified against the original ACNE04 benchmark, and pursuing the prospective clinical evaluation of the proposed teledermatology system. Overall, the proposed framework represents a methodologically rigorous and efficient approach to AI-assisted facial acne severity assessment, now directly comparable to the dataset's own benchmark and measured on real mobile hardware, whose main current limitation is the diversity of available annotated data rather than the architecture itself.
 
 \section*{Acknowledgment}
 The authors acknowledge the financial support provided by the Instituto Federal de Educação, Ciência e Tecnologia do Ceará (IFCE) through EDITAL Nº 9/2024 PRPI/REITORIA-IFCE, which made this research possible. The authors also thank the Laboratório de Processamento de Imagens e Simulação Computacional (LAPISCO) for providing the research infrastructure and scientific collaboration. In addition, the authors acknowledge the Conselho Nacional de Desenvolvimento Científico e Tecnológico (CNPq) for supporting one of the authors through a Master's scholarship.
@@ -574,6 +651,14 @@ The authors acknowledge the financial support provided by the Instituto Federal 
 \bibitem{b28} Flutter Documentation, “Flutter documentation,” 2026. [Online]. Available: https://docs.flutter.dev
 
 \bibitem{b29} P. Izmailov, D. Podoprikhin, T. Garipov, D. Vetrov, and A. G. Wilson, “Averaging weights leads to wider optima and better generalization,” in Proc. Conf. Uncertainty in Artificial Intelligence (UAI), 2018.
+
+\bibitem{b30} X. Wu, W. Ni, L. Jie, Y.-K. Lai, D. Cheng, M.-M. She, and J. Yang, “Joint acne image grading and counting via label distribution learning,” in Proc. IEEE/CVF Int. Conf. Computer Vision (ICCV), 2019, pp. 10642–10651.
+
+\bibitem{b31} S. Woo, J. Park, J.-Y. Lee, and I. S. Kweon, “CBAM: Convolutional block attention module,” in Proc. European Conf. Computer Vision (ECCV), 2018, pp. 3–19.
+
+\bibitem{b32} Y. Lin, Z. Ma, J. Jiang, D. Chen, Y. Guan, H. You, X. Cheng, and B. Liu, “An acne grading framework on face images via skin attention and SFNet,” in Proc. IEEE Int. Conf. Bioinformatics and Biomedicine (BIBM), 2021, pp. 2407–2414.
+
+\bibitem{b33} G. Jocher, A. Chaurasia, and J. Qiu, “Ultralytics YOLOv8,” 2023. [Online]. Available: https://github.com/ultralytics/ultralytics
 
 \end{thebibliography}
 

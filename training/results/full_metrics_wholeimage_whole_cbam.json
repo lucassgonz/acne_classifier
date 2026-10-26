@@ -1,0 +1,70 @@
+{
+  "config": "whole_cbam",
+  "n_folds": 5,
+  "n_samples_pooled": 2006,
+  "accuracy": 0.7298105682951147,
+  "f1_macro": 0.7261553371852016,
+  "f1_weighted": 0.730298022566298,
+  "qwk": 0.821841750469599,
+  "confusion_matrix": [
+    [
+      484,
+      153,
+      4,
+      0
+    ],
+    [
+      123,
+      575,
+      94,
+      6
+    ],
+    [
+      4,
+      77,
+      293,
+      41
+    ],
+    [
+      0,
+      3,
+      37,
+      112
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.7550702028081123,
+      "specificity": 0.906959706959707,
+      "support": 641
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.7205513784461153,
+      "specificity": 0.8071192052980133,
+      "support": 798
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.7060240963855422,
+      "specificity": 0.9151477058453803,
+      "support": 415
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.7368421052631579,
+      "specificity": 0.9746494066882416,
+      "support": 152
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.0310216433445692
+  }
+}

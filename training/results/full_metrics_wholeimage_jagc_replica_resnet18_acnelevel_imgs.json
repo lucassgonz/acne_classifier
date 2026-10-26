@@ -1,0 +1,70 @@
+{
+  "config": "jagc_replica_resnet18_acnelevel_imgs",
+  "n_folds": 5,
+  "n_samples_pooled": 1460,
+  "accuracy": 0.8095890410958904,
+  "f1_macro": 0.7736550800597595,
+  "f1_weighted": 0.8077208612350002,
+  "qwk": 0.8773702670686744,
+  "confusion_matrix": [
+    [
+      462,
+      53,
+      0,
+      0
+    ],
+    [
+      93,
+      517,
+      24,
+      1
+    ],
+    [
+      0,
+      56,
+      108,
+      16
+    ],
+    [
+      0,
+      3,
+      32,
+      95
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.8970873786407767,
+      "specificity": 0.9015873015873016,
+      "support": 515
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.8141732283464567,
+      "specificity": 0.8642424242424243,
+      "support": 635
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.6,
+      "specificity": 0.95625,
+      "support": 180
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.7307692307692307,
+      "specificity": 0.987218045112782,
+      "support": 130
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.08835245754620799
+  }
+}

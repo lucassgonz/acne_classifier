@@ -1,0 +1,68 @@
+{
+  "note": "Numeros da literatura em classificacao de gravidade de acne no ACNE04 (ou variantes), IMAGEM INTEIRA (nao recorte por regiao) -- comparavel ao nosso whole_base*. Protocolos de split diferem entre os papers (k-fold vs holdout), entao nao sao 100% comparaveis entre si tambem -- registrado honestamente.",
+  "baselines": [
+    {
+      "method": "JAGC (Label Distribution Learning)",
+      "paper": "Wu et al., \"Joint Acne Image Grading and Counting via Label Distribution Learning\", ICCV 2019 -- paper original do ACNE04",
+      "accuracy": 0.8411,
+      "dataset": "ACNE04"
+    },
+    {
+      "method": "SFNet (skin attention)",
+      "paper": "Lin et al., \"An Acne Grading Framework on Face Images via Skin Attention and SFNet\", IEEE BIBM 2021",
+      "accuracy": 0.8452,
+      "dataset": "ACNE04"
+    },
+    {
+      "method": "PKGF (prior knowledge guidance)",
+      "paper": "nao confirmado em detalhe -- so leaderboard (paperswithcode)",
+      "accuracy": 0.8527,
+      "dataset": "ACNE04"
+    },
+    {
+      "method": "DED (diagnostic evidence distillation)",
+      "paper": "Lin et al., \"DED: Diagnostic Evidence Distillation for acne severity grading on face images\", Expert Systems with Applications 2023",
+      "accuracy": 0.8606,
+      "dataset": "ACNE04"
+    },
+    {
+      "method": "EfficientNet-B0 + Grad-CAM (preprint)",
+      "paper": "arXiv 2607.26461, 2025 -- split proprio (holdout 15%), NAO diretamente comparavel",
+      "accuracy": 0.935,
+      "dataset": "ACNE04",
+      "caveat": "split diferente dos demais, preprint sem revisao por pares confirmada"
+    }
+  ],
+  "ours": [
+    {
+      "method": "Nosso: ResNet18 imagem inteira (whole_base), split limpo k-fold, 1 seed",
+      "accuracy": 0.7223,
+      "qwk": 0.809,
+      "dataset": "ACNE04 (Dataset/) + manual_annotations, combinados"
+    },
+    {
+      "method": "Nosso: + SWA + TTA (7 views), 1 seed",
+      "accuracy": 0.7363,
+      "qwk": 0.821,
+      "dataset": "ACNE04 (Dataset/) + manual_annotations, combinados"
+    },
+    {
+      "method": "Nosso: + ensemble 5 seeds (MELHOR)",
+      "accuracy": 0.7507,
+      "qwk": 0.836,
+      "dataset": "ACNE04 (Dataset/) + manual_annotations, combinados"
+    },
+    {
+      "method": "Nosso: cross-dataset Acne04->AcneLevel (tratado), com TTA",
+      "accuracy": 0.8456,
+      "qwk": 0.889,
+      "dataset": "Acne04 treino / AcneLevel(tratado) teste -- VER RESSALVA em project memory: fontes compartilham populacao de fotos"
+    },
+    {
+      "method": "Nosso: cross-dataset AcneLevel(tratado)->Acne04, com TTA",
+      "accuracy": 0.8578,
+      "qwk": 0.900,
+      "dataset": "AcneLevel(tratado) treino / Acne04 teste -- mesma ressalva"
+    }
+  ]
+}

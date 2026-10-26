@@ -1,0 +1,46 @@
+{
+  "acne04": {
+    "stats": {
+      "no_face": 184,
+      "ok": 1222
+    },
+    "region_visible": {
+      "forehead": 1174,
+      "chin": 418,
+      "nose": 1221,
+      "left_cheek": 652,
+      "right_cheek": 610
+    },
+    "total_with_face": 1222,
+    "hist_n_regions": {
+      "0": 184,
+      "1": 0,
+      "2": 14,
+      "3": 796,
+      "4": 401,
+      "5": 11
+    }
+  },
+  "acnelevel": {
+    "stats": {
+      "no_face": 184,
+      "ok": 1273
+    },
+    "region_visible": {
+      "forehead": 1205,
+      "chin": 1124,
+      "nose": 1268,
+      "left_cheek": 674,
+      "right_cheek": 634
+    },
+    "total_with_face": 1273,
+    "hist_n_regions": {
+      "0": 184,
+      "1": 1,
+      "2": 14,
+      "3": 188,
+      "4": 1038,
+      "5": 32
+    }
+  }
+}

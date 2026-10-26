@@ -1,0 +1,70 @@
+{
+  "config": "jagc_replica_resnet18",
+  "n_folds": 5,
+  "n_samples_pooled": 1460,
+  "accuracy": 0.8082191780821918,
+  "f1_macro": 0.7826052903876228,
+  "f1_weighted": 0.8070874613028478,
+  "qwk": 0.8799676893578978,
+  "confusion_matrix": [
+    [
+      456,
+      59,
+      0,
+      0
+    ],
+    [
+      94,
+      511,
+      30,
+      0
+    ],
+    [
+      0,
+      53,
+      112,
+      15
+    ],
+    [
+      0,
+      2,
+      27,
+      101
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.8854368932038835,
+      "specificity": 0.9005291005291005,
+      "support": 515
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.8047244094488188,
+      "specificity": 0.8618181818181818,
+      "support": 635
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.6222222222222222,
+      "specificity": 0.95546875,
+      "support": 180
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.7769230769230769,
+      "specificity": 0.9887218045112782,
+      "support": 130
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.08192336747091111
+  }
+}

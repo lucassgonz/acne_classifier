@@ -1,0 +1,76 @@
+{
+  "config": "official_multitask_ensemble5seeds",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "n_samples_pooled": 1460,
+  "accuracy": 0.7760273972602739,
+  "f1_macro": 0.7398348191326709,
+  "f1_weighted": 0.778258997005864,
+  "qwk": 0.8591233577740985,
+  "confusion_matrix": [
+    [
+      448,
+      65,
+      1,
+      1
+    ],
+    [
+      87,
+      467,
+      75,
+      6
+    ],
+    [
+      0,
+      29,
+      115,
+      36
+    ],
+    [
+      0,
+      1,
+      26,
+      103
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.8699029126213592,
+      "specificity": 0.9079365079365079,
+      "support": 515
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.7354330708661417,
+      "specificity": 0.8848484848484849,
+      "support": 635
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.6388888888888888,
+      "specificity": 0.9203125,
+      "support": 180
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.7923076923076923,
+      "specificity": 0.9676691729323308,
+      "support": 130
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.10383172194435171
+  }
+}

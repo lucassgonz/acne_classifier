@@ -1,0 +1,59 @@
+{
+  "real_device": {
+    "device": "Samsung Galaxy S24+ (SM-S926B), hardware fisico real (nao emulador)",
+    "model": "5x ResNet18WithEmbed (region-aware), ONNX, seeds 42-46, ~45MB cada",
+    "build": "release APK (flutter build apk --release)",
+    "measurement_method": "Stopwatch instrumentado em lib/screens/analyzing_screen.dart (BENCH log lines) via adb logcat; memoria via adb shell dumpsys meminfo; energia via adb shell dumpsys batterystats (--reset antes, --charged depois), dispositivo desconectado do USB (adb por Wi-Fi) durante a medicao de energia para permitir descarga real de bateria.",
+    "runs": [
+      {"model_load_ms": 1440, "face_extraction_ms": 95, "total_pipeline_ms": 2871,
+       "per_region_inference_ms": {"forehead": 322, "chin": 289, "nose": 238, "left_cheek": 240, "right_cheek": 244}},
+      {"model_load_ms": 1423, "face_extraction_ms": 134, "total_pipeline_ms": 2817,
+       "per_region_inference_ms": {"forehead": 282, "chin": 250, "nose": 240, "left_cheek": 240, "right_cheek": 246}},
+      {"model_load_ms": 1934, "face_extraction_ms": 423, "total_pipeline_ms": 3741,
+       "per_region_inference_ms": {"forehead": 311, "chin": 278, "nose": 259, "left_cheek": 264, "right_cheek": 268}}
+    ],
+    "average": {
+      "model_load_ms": 1599,
+      "face_extraction_ms": 217.3,
+      "total_pipeline_ms": 3143,
+      "per_region_inference_ms": {"forehead": 305.0, "chin": 272.3, "nose": 245.7, "left_cheek": 248.0, "right_cheek": 252.7}
+    },
+    "memory": {
+      "memory_pss_total_kb": 631999,
+      "memory_native_heap_private_dirty_kb": 332356,
+      "note": "capturado em uma 4a execucao isolada (USB conectado), nao nas 3 usadas para energia"
+    },
+    "energy": {
+      "method": "dumpsys batterystats --reset / --charged <package>, 3 analises completas em sequencia, tela ligada, dispositivo em Wi-Fi (sem USB)",
+      "total_duration_on_battery": "2min 14s (3 analises + navegacao entre elas)",
+      "system_total_discharge_mah": 38.4,
+      "app_attributed_discharge_mah": 22.7,
+      "app_attributed_discharge_mah_per_analysis": 7.57,
+      "app_power_breakdown_mah": {"screen": 8.13, "cpu": 2.84, "camera": 11.8},
+      "estimated_energy_per_analysis_mwh": 29.1,
+      "caveats": [
+        "Estimativa do Android (power_profile model), nao medicao direta por multimetro -- o proprio sistema reporta 'Can trust power_profile: true' e o drain computado (19.2 mAh) bate com o drain real observado (19.2 mAh) nessa janela, o que da confianca razoavel na estimativa.",
+        "O maior componente (camera=11.8 mAh de 22.7 mAh) e o preview da camera/picker de galeria ficando aberto (1min54s) durante a selecao da foto, NAO o custo computacional da inferencia em si (cpu=2.84 mAh) -- a maior parte da 'energia do app' e UI/camera, nao o modelo.",
+        "Conexao adb via Wi-Fi (necessaria pra medir com o cabo USB desconectado) consome uma fracao de energia propria (wifi=0.329 mAh no total do sistema) que nao existiria em uso normal do app sem o adb conectado -- impacto pequeno frente ao total, mas registrado para transparencia.",
+        "3 execucoes e uma amostra pequena; o numero deve ser tratado como uma ordem de grandeza (\"dezenas de mWh por analise\"), nao um valor de precisao de laboratorio."
+      ]
+    }
+  },
+  "emulator_reference": {
+    "device": "Android emulator (sdk gphone64 arm64, ARM64 system image, API 37) -- referencia historica, substituido pelo real_device acima para os numeros finais do artigo",
+    "model": "5x ResNet18WithEmbed (region-aware), ONNX, seeds 42-46, ~45MB cada",
+    "single_run": {
+      "model_load_ms": 2036,
+      "face_extraction_ms": 1731,
+      "per_region_inference_ms": {"forehead": 754, "chin": 1023, "nose": 733, "left_cheek": 3199, "right_cheek": 1553},
+      "total_pipeline_ms": 11064,
+      "memory_pss_total_kb": 607440,
+      "memory_native_heap_private_dirty_kb": 354184
+    },
+    "note": "Pipeline ~3.5x mais lento que no celular real (contencao de recursos do host rodando o emulador), memoria similar em ordem de grandeza."
+  },
+  "limitations": [
+    "5 modelos carregados e executados sequencialmente (nao em paralelo) -- pipeline poderia ser mais rapido/leve com modelos quantizados ou um unico modelo (sem ensemble) para deploy, as custa de alguma acuracia.",
+    "Medido em um unico aparelho (Galaxy S24+, hardware de ponta) -- latencia/energia em aparelhos mais modestos tende a ser pior."
+  ]
+}

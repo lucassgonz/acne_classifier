@@ -1,0 +1,76 @@
+{
+  "config": "official_jagc_longepochs_ensemble5seeds",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "n_samples_pooled": 1460,
+  "accuracy": 0.7856164383561643,
+  "f1_macro": 0.7546083842145987,
+  "f1_weighted": 0.7843640776469768,
+  "qwk": 0.8590494752260704,
+  "confusion_matrix": [
+    [
+      372,
+      143,
+      0,
+      0
+    ],
+    [
+      31,
+      572,
+      32,
+      0
+    ],
+    [
+      0,
+      55,
+      104,
+      21
+    ],
+    [
+      0,
+      2,
+      29,
+      99
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.7223300970873786,
+      "specificity": 0.9671957671957672,
+      "support": 515
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.9007874015748032,
+      "specificity": 0.7575757575757576,
+      "support": 635
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.5777777777777777,
+      "specificity": 0.95234375,
+      "support": 180
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.7615384615384615,
+      "specificity": 0.9842105263157894,
+      "support": 130
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.14981377469758467
+  }
+}

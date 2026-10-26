@@ -1,0 +1,16 @@
+{
+  "train_source": "acnelevel",
+  "output_dir": "results/cross_dataset",
+  "pretrained_backbone": "models/backbone_scin_pretrained_v2.pth",
+  "epochs": 40,
+  "patience": 10,
+  "batch_size": 16,
+  "lr": 0.0001,
+  "weight_decay": 0.0001,
+  "mixup_alpha": 0.2,
+  "swa": true,
+  "swa_epochs": 10,
+  "tta_views": 7,
+  "val_frac": 0.15,
+  "seed": 42
+}

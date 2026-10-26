@@ -41,26 +41,120 @@ def get_device():
 # Modelos
 # ---------------------------------------------------------------------------
 
-BACKBONE_OUT_FEATURES = {"resnet18": 512, "resnet34": 512}
+BACKBONE_OUT_FEATURES = {"resnet18": 512, "resnet34": 512, "resnet50": 2048, "efficientnet_b0": 1280}
+
+_BACKBONE_CTORS = {
+    "resnet18": (models.resnet18, models.ResNet18_Weights),
+    "resnet34": (models.resnet34, models.ResNet34_Weights),
+    "resnet50": (models.resnet50, models.ResNet50_Weights),
+    "efficientnet_b0": (models.efficientnet_b0, models.EfficientNet_B0_Weights),
+}
 
 
 def _load_backbone(pretrained_backbone_path, arch="resnet18"):
     """
-    Cria um resnet18/resnet34. Se pretrained_backbone_path for informado,
-    carrega o backbone pré-treinado (ex: SCIN, que já parte de ImageNet).
-    Caso contrário, usa pesos ImageNet como ponto de partida padrão —
-    treinar do zero (weights=None) é inadequado para um dataset do
-    tamanho do ACNE04.
+    Cria o backbone (resnet18/resnet34/efficientnet_b0). Se
+    pretrained_backbone_path for informado, carrega o backbone pré-treinado
+    (ex: SCIN, que já parte de ImageNet) -- so existe checkpoint proprio para
+    resnet18/34 ate agora. Caso contrario, usa pesos ImageNet como ponto de
+    partida padrao -- treinar do zero (weights=None) e inadequado para um
+    dataset do tamanho do ACNE04.
     """
-    ctor = models.resnet18 if arch == "resnet18" else models.resnet34
-    weights_enum = models.ResNet18_Weights if arch == "resnet18" else models.ResNet34_Weights
+    ctor, weights_enum = _BACKBONE_CTORS[arch]
     if pretrained_backbone_path is not None:
+        if arch not in ("resnet18", "resnet34"):
+            raise ValueError(
+                f"--pretrained-backbone so tem checkpoint proprio pra resnet18/34, nao para '{arch}' -- "
+                f"carregar um state_dict de resnet num backbone diferente nao da erro (strict=False ignora "
+                f"as chaves que nao batem), mas deixa o backbone ESSENCIALMENTE ALEATORIO (nenhuma chave "
+                f"bate), o que derruba a acuracia silenciosamente. Omita --pretrained-backbone para usar "
+                f"os pesos ImageNet padrao desse arch."
+            )
         base = ctor(weights=None)
         state = torch.load(pretrained_backbone_path, map_location="cpu")
         base.load_state_dict(state, strict=False)
     else:
         base = ctor(weights=weights_enum.DEFAULT)
     return nn.Sequential(*list(base.children())[:-1])
+
+
+def _load_backbone_features(pretrained_backbone_path, arch="resnet18"):
+    """Igual a _load_backbone, mas sem o avgpool final -- devolve o mapa de
+    features espacial (N,C,H,W) cru, para poder inserir atencao (CBAM) antes
+    do pooling global. So resnet18/34 (estrutura features+avgpool+fc)."""
+    assert arch in ("resnet18", "resnet34", "resnet50"), "CBAM so implementado para resnet18/34/50"
+    assert pretrained_backbone_path is None or arch in ("resnet18", "resnet34"), "checkpoint SCIN so existe para resnet18/34"
+    ctor, weights_enum = _BACKBONE_CTORS[arch]
+    if pretrained_backbone_path is not None:
+        base = ctor(weights=None)
+        state = torch.load(pretrained_backbone_path, map_location="cpu")
+        base.load_state_dict(state, strict=False)
+    else:
+        base = ctor(weights=weights_enum.DEFAULT)
+    return nn.Sequential(*list(base.children())[:-2])
+
+
+class CBAM(nn.Module):
+    """Convolutional Block Attention Module (Woo et al., 2018): atencao de
+    canal (pooling medio+maximo por canal -> MLP compartilhado) seguida de
+    atencao espacial (pooling medio+maximo entre canais -> conv 7x7),
+    aplicadas em sequencia sobre o mapa de features. Leve (poucos parametros
+    extras) -- inspirada no mecanismo de "skin attention" do SFNet (Lin et
+    al., BIBM 2021), que tambem combina features locais e globais para
+    realcar a distincao pele/lesao."""
+
+    def __init__(self, channels, reduction=16, spatial_kernel=7):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(channels, channels // reduction),
+            nn.ReLU(inplace=True),
+            nn.Linear(channels // reduction, channels),
+        )
+        self.spatial_conv = nn.Conv2d(2, 1, kernel_size=spatial_kernel, padding=spatial_kernel // 2, bias=False)
+
+    def forward(self, x):
+        b, c, _, _ = x.shape
+        avg_pool = x.mean(dim=(2, 3))
+        max_pool = x.amax(dim=(2, 3))
+        channel_att = torch.sigmoid(self.mlp(avg_pool) + self.mlp(max_pool)).view(b, c, 1, 1)
+        x = x * channel_att
+
+        avg_map = x.mean(dim=1, keepdim=True)
+        max_map = x.amax(dim=1, keepdim=True)
+        spatial_att = torch.sigmoid(self.spatial_conv(torch.cat([avg_map, max_map], dim=1)))
+        return x * spatial_att
+
+
+class ResNet18CBAM(nn.Module):
+    """Mesma arquitetura de ResNet18NoEmbed, com um bloco CBAM inserido
+    entre o backbone convolucional e o pooling global -- testa se atencao
+    canal+espacial (na linha do "skin attention" do SFNet) ajuda o ResNet18
+    a focar nas regioes de lesao sem trocar de backbone."""
+
+    def __init__(self, num_classes=4, pretrained_backbone_path=None, arch="resnet18"):
+        super().__init__()
+        self.backbone = _load_backbone_features(pretrained_backbone_path, arch=arch)
+        in_features = BACKBONE_OUT_FEATURES[arch]
+        self.cbam = CBAM(in_features)
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.classifier = nn.Sequential(
+            nn.Dropout(0.3),
+            nn.Linear(in_features, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(256, 128),
+            nn.BatchNorm1d(128),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Linear(128, num_classes),
+        )
+
+    def forward(self, x, region_idx=None):
+        feat = self.backbone(x)
+        feat = self.cbam(feat)
+        feat = self.pool(feat).flatten(1)
+        return self.classifier(feat)
 
 
 class ResNet18WithEmbed(nn.Module):
@@ -200,6 +294,40 @@ class FocalLoss(nn.Module):
         return focal.mean()
 
 
+class OrdinalSoftLoss(nn.Module):
+    """Cross-entropy com alvo suave que decai com a distancia ordinal ao rotulo."""
+
+    def __init__(self, weight=None, tau=0.7, num_classes=4):
+        super().__init__()
+        self.weight = weight
+        idx = torch.arange(num_classes, dtype=torch.float)
+        dist = (idx.unsqueeze(0) - idx.unsqueeze(1)).abs()
+        soft = torch.exp(-dist / tau)
+        self.register_buffer("soft", soft / soft.sum(dim=1, keepdim=True))
+
+    def forward(self, logits, targets):
+        logp = nn.functional.log_softmax(logits, dim=1)
+        per_sample = -(self.soft[targets] * logp).sum(dim=1)
+        if self.weight is not None:
+            w = self.weight[targets]
+            return (per_sample * w).sum() / w.sum()
+        return per_sample.mean()
+
+
+def build_optimizer(model, name, lr, weight_decay, head_lr_mult=1.0):
+    backbone = [p for n, p in model.named_parameters() if n.startswith("backbone.")]
+    head = [p for n, p in model.named_parameters() if not n.startswith("backbone.")]
+    if head_lr_mult == 1.0 or not backbone:
+        groups = model.parameters()
+    else:
+        groups = [{"params": backbone, "lr": lr}, {"params": head, "lr": lr * head_lr_mult}]
+    if name == "adamw":
+        return torch.optim.AdamW(groups, lr=lr, weight_decay=weight_decay)
+    if name == "sgd":
+        return torch.optim.SGD(groups, lr=lr, momentum=0.9, nesterov=True, weight_decay=weight_decay)
+    return torch.optim.Adam(groups, lr=lr, weight_decay=weight_decay)
+
+
 # ---------------------------------------------------------------------------
 # Treino / Avaliação
 # ---------------------------------------------------------------------------
@@ -262,15 +390,22 @@ def evaluate(model, loader, device):
 def train_model(model, train_loader, val_loader, test_loader,
                 class_weights, device, num_epochs=40, patience=10, weight_decay=1e-4,
                 loss_type="weighted_ce", mixup_alpha=0.0, lr=1e-4,
-                swa=False, swa_epochs=10, swa_lr=None):
+                swa=False, swa_epochs=10, swa_lr=None,
+                optimizer_name="adam", scheduler_name="plateau",
+                label_smoothing=0.0, head_lr_mult=1.0, ordinal_tau=0.7):
     if loss_type == "focal":
         criterion = FocalLoss(weight=class_weights.to(device), gamma=2.0)
+    elif loss_type == "ordinal_ls":
+        criterion = OrdinalSoftLoss(weight=class_weights.to(device), tau=ordinal_tau).to(device)
     else:
-        criterion = nn.CrossEntropyLoss(weight=class_weights.to(device))
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="max", factor=0.5, patience=5
-    )
+        criterion = nn.CrossEntropyLoss(weight=class_weights.to(device), label_smoothing=label_smoothing)
+    optimizer = build_optimizer(model, optimizer_name, lr, weight_decay, head_lr_mult)
+    if scheduler_name == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs, eta_min=lr * 0.01)
+    else:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer, mode="max", factor=0.5, patience=5
+        )
 
     best_val_acc = 0.0
     best_state = None
@@ -279,7 +414,10 @@ def train_model(model, train_loader, val_loader, test_loader,
     for epoch in range(1, num_epochs + 1):
         train_one_epoch(model, train_loader, criterion, optimizer, device, mixup_alpha=mixup_alpha)
         val_acc, val_f1, val_qwk = evaluate(model, val_loader, device)
-        scheduler.step(val_acc)
+        if scheduler_name == "cosine":
+            scheduler.step()
+        else:
+            scheduler.step(val_acc)
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
@@ -300,7 +438,7 @@ def train_model(model, train_loader, val_loader, test_loader,
         model.load_state_dict(best_state)
         swa_model = torch.optim.swa_utils.AveragedModel(model)
         swa_lr = swa_lr if swa_lr is not None else lr * 0.5
-        swa_optimizer = torch.optim.Adam(model.parameters(), lr=swa_lr, weight_decay=weight_decay)
+        swa_optimizer = build_optimizer(model, optimizer_name, swa_lr, weight_decay, head_lr_mult)
 
         for _ in range(swa_epochs):
             train_one_epoch(model, train_loader, criterion, swa_optimizer, device, mixup_alpha=mixup_alpha)

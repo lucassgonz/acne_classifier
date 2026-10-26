@@ -12,7 +12,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <application
-        android:label="Classificador de Acne"
+        android:label="AcneApp"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         

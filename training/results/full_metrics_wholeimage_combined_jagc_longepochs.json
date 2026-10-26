@@ -1,0 +1,70 @@
+{
+  "config": "combined_jagc_longepochs",
+  "n_folds": 5,
+  "n_samples_pooled": 2863,
+  "accuracy": 0.7621376178833391,
+  "f1_macro": 0.732289343309001,
+  "f1_weighted": 0.7614326801890973,
+  "qwk": 0.8371664610164263,
+  "confusion_matrix": [
+    [
+      718,
+      270,
+      0,
+      0
+    ],
+    [
+      110,
+      1081,
+      63,
+      6
+    ],
+    [
+      0,
+      129,
+      209,
+      25
+    ],
+    [
+      0,
+      3,
+      75,
+      174
+    ]
+  ],
+  "confusion_matrix_labels": [
+    "0-clear",
+    "1-mild",
+    "2-moderate",
+    "3-severe"
+  ],
+  "per_grade": [
+    {
+      "grade": "0-clear",
+      "sensitivity": 0.7267206477732794,
+      "specificity": 0.9413333333333334,
+      "support": 988
+    },
+    {
+      "grade": "1-mild",
+      "sensitivity": 0.8579365079365079,
+      "specificity": 0.7492202121023082,
+      "support": 1260
+    },
+    {
+      "grade": "2-moderate",
+      "sensitivity": 0.5757575757575758,
+      "specificity": 0.9448,
+      "support": 363
+    },
+    {
+      "grade": "3-severe",
+      "sensitivity": 0.6904761904761905,
+      "specificity": 0.9881271543469935,
+      "support": 252
+    }
+  ],
+  "calibration": {
+    "expected_calibration_error": 0.10744883118498545
+  }
+}
