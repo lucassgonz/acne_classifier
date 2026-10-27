@@ -119,6 +119,8 @@ def main():
                          "contagens via identidade canonica a partir de --count-source. Use com --img-dir.")
     ap.add_argument("--count-source", default="results/kfold_splits_official_acne04.json")
     ap.add_argument("--img-dir", default=None)
+    ap.add_argument("--only-source", default=None, choices=["a04", "lvl"],
+                    help="Com --manifest-v2: usa so imagens de uma fonte (a04=Acne04, lvl=AcneLevel tratado) em treino e teste.")
     ap.add_argument("--arch", default="resnet50", choices=["resnet50", "resnet18", "resnet34"])
     args = ap.parse_args()
 
@@ -144,7 +146,8 @@ def main():
 
         def items(keys):
             return [(n, int(manifest[n]["level"]), int(round(counts_by_canon[manifest[n]["canonical"]])))
-                    for k in keys for n in fold[k] if n in manifest]
+                    for k in keys for n in fold[k]
+                    if n in manifest and (args.only_source is None or manifest[n]["source"] == args.only_source)]
     else:
         def items(keys):
             out = []
