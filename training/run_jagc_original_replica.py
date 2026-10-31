@@ -45,16 +45,17 @@ IMG_DIR = "../data/jagc_replica_300"  # sobrescrito por --img-dir
 
 
 class JAGCDataset(Dataset):
-    def __init__(self, items, transform):
+    def __init__(self, items, transform, img_dir):
         self.items = items  # (filename, label, lesion_count)
         self.transform = transform
+        self.img_dir = img_dir
 
     def __len__(self):
         return len(self.items)
 
     def __getitem__(self, i):
         name, label, lesion = self.items[i]
-        img = Image.open(os.path.join(IMG_DIR, name)).convert("RGB")
+        img = Image.open(os.path.join(self.img_dir, name)).convert("RGB")
         return self.transform(img), torch.tensor(label), torch.tensor(lesion)
 
 
@@ -119,9 +120,14 @@ def main():
                          "contagens via identidade canonica a partir de --count-source. Use com --img-dir.")
     ap.add_argument("--count-source", default="results/kfold_splits_official_acne04.json")
     ap.add_argument("--img-dir", default=None)
+    ap.add_argument("--num-workers", type=int, default=0)
     ap.add_argument("--only-source", default=None, choices=["a04", "lvl"],
                     help="Com --manifest-v2: usa so imagens de uma fonte (a04=Acne04, lvl=AcneLevel tratado) em treino e teste.")
     ap.add_argument("--arch", default="resnet50", choices=["resnet50", "resnet18", "resnet34"])
+    ap.add_argument("--resize", type=int, default=256, help="Lado do resize de treino antes do crop aleatorio.")
+    ap.add_argument("--crop", type=int, default=224, help="Lado do crop de treino; o teste usa resize direto para esse lado.")
+    ap.add_argument("--tta", action="store_true",
+                    help="Ao final, tambem salva probs com TTA (media da imagem original e do flip horizontal).")
     args = ap.parse_args()
 
     out_dir = os.path.join(args.output_dir, args.name)
@@ -133,9 +139,7 @@ def main():
 
     fold = json.load(open(args.splits))["folds"][args.fold]
 
-    global IMG_DIR
-    if args.img_dir:
-        IMG_DIR = args.img_dir
+    img_dir = args.img_dir or IMG_DIR
 
     if args.manifest_v2:
         manifest = {m["name"]: m for m in json.load(open(args.manifest_v2))}
@@ -165,13 +169,13 @@ def main():
 
     normalize = transforms.Normalize(mean=[0.45815152, 0.361242, 0.29348266], std=[0.2814769, 0.226306, 0.20132513])
     train_tf = transforms.Compose([
-        transforms.Resize((256, 256)), transforms.RandomCrop(224), transforms.RandomHorizontalFlip(),
+        transforms.Resize((args.resize, args.resize)), transforms.RandomCrop(args.crop), transforms.RandomHorizontalFlip(),
         transforms.ToTensor(), RandomRotate(rotation_range=20), normalize,
     ])
-    test_tf = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor(), normalize])
+    test_tf = transforms.Compose([transforms.Resize((args.crop, args.crop)), transforms.ToTensor(), normalize])
 
-    train_loader = DataLoader(JAGCDataset(train_items, train_tf), batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
-    test_loader = DataLoader(JAGCDataset(test_items, test_tf), batch_size=20, shuffle=False, num_workers=0)
+    train_loader = DataLoader(JAGCDataset(train_items, train_tf, img_dir), batch_size=BATCH_SIZE, shuffle=True, num_workers=args.num_workers)
+    test_loader = DataLoader(JAGCDataset(test_items, test_tf, img_dir), batch_size=20, shuffle=False, num_workers=args.num_workers)
 
     device = get_device()
     cnn = (resnet50() if args.arch == "resnet50" else JAGCNetTV(args.arch)).to(device)
@@ -230,8 +234,25 @@ def main():
     print(f"[{args.name}] fold {args.fold}: ULTIMA epoca Acc={acc:.4f} F1m={f1:.4f} QWK={qwk:.4f} | "
           f"melhor-epoca-no-teste Acc={best:.4f} ({minutes:.1f} min)", flush=True)
 
+    extra = {}
+    if args.tta:
+        cnn.eval()
+        tta_probs = []
+        with torch.no_grad():
+            for x, _, _ in test_loader:
+                x = x.to(device)
+                combo = sum((lambda o: o[0] + o[2])(cnn(v, None)) for v in (x, torch.flip(x, dims=[3]))).cpu().numpy()
+                tta_probs.append(combo / combo.sum(1, keepdims=True))
+        tta_probs = np.concatenate(tta_probs)
+        tp = tta_probs.argmax(1)
+        extra["probs_tta"] = tta_probs
+        extra["metrics_tta"] = np.array([accuracy_score(labels, tp), f1_score(labels, tp, average="macro"),
+                                         cohen_kappa_score(labels, tp, weights="quadratic")])
+        print(f"[{args.name}] fold {args.fold}: com TTA Acc={extra['metrics_tta'][0]:.4f} F1m={extra['metrics_tta'][1]:.4f} "
+              f"QWK={extra['metrics_tta'][2]:.4f}", flush=True)
+
     np.savez(npz_path, names=np.array([t[0] for t in test_items]), labels=labels, probs=final_probs,
-             metrics=np.array([acc, f1, qwk, best]), minutes=np.array([minutes]))
+             metrics=np.array([acc, f1, qwk, best]), minutes=np.array([minutes]), **extra)
     json.dump(history, open(os.path.join(out_dir, f"history_fold{args.fold}.json"), "w"))
 
 
