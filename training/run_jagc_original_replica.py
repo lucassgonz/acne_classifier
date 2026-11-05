@@ -99,6 +99,26 @@ class JAGCNetTV(nn.Module):
         return cls, cou, cou2cls
 
 
+def numpy_collate(batch):
+    """Monta o batch em numpy dentro do worker: no Windows (Python 3.15 + torch 2.14) o envio de tensores
+    entre processos via memoria compartilhada derruba os workers do DataLoader."""
+    return tuple(np.stack([np.asarray(item[k]) for item in batch]) for k in range(len(batch[0])))
+
+
+class TensorLoader:
+    """Converte de volta para tensores no processo principal; o resto do treino fica identico."""
+
+    def __init__(self, loader):
+        self.loader = loader
+
+    def __iter__(self):
+        for batch in self.loader:
+            yield tuple(torch.from_numpy(b) for b in batch)
+
+    def __len__(self):
+        return len(self.loader)
+
+
 def get_device():
     if torch.cuda.is_available():
         return torch.device("cuda")
@@ -174,8 +194,9 @@ def main():
     ])
     test_tf = transforms.Compose([transforms.Resize((args.crop, args.crop)), transforms.ToTensor(), normalize])
 
-    train_loader = DataLoader(JAGCDataset(train_items, train_tf, img_dir), batch_size=BATCH_SIZE, shuffle=True, num_workers=args.num_workers)
-    test_loader = DataLoader(JAGCDataset(test_items, test_tf, img_dir), batch_size=20, shuffle=False, num_workers=args.num_workers)
+    loader_kw = dict(num_workers=args.num_workers, collate_fn=numpy_collate, persistent_workers=args.num_workers > 0)
+    train_loader = TensorLoader(DataLoader(JAGCDataset(train_items, train_tf, img_dir), batch_size=BATCH_SIZE, shuffle=True, **loader_kw))
+    test_loader = TensorLoader(DataLoader(JAGCDataset(test_items, test_tf, img_dir), batch_size=20, shuffle=False, **loader_kw))
 
     device = get_device()
     cnn = (resnet50() if args.arch == "resnet50" else JAGCNetTV(args.arch)).to(device)

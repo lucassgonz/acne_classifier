@@ -201,12 +201,26 @@ python predict.py caminho/para/imagem.jpg --region forehead --weights models/abl
 
 ## Resultados
 
-| Modelo | Unidade de avaliação | Accuracy | F1 (weighted) | QWK |
+Validação cruzada agrupada em 5 folds no conjunto combinado ACNE04 + AcneLevel (2.863 imagens, sem a mesma foto em treino e teste), métricas agregadas dos 5 folds de teste, última época, sem seleção no teste:
+
+| Modelo | Unidade de avaliação | Accuracy | Macro-F1 | QWK |
 |---|---|---|---|---|
-| Region-Aware ResNet-18 (WithEmbed, ensemble+TTA) | 1.061 recortes de região | 64,18% | 0,641 | 0,718 |
-| ResNet-18 convencional (NoEmbed, ensemble+TTA) | 1.061 recortes de região | 64,18% | 0,641 | 0,698 |
-| Multi-region fusion (ensemble+TTA) | 278 imagens | 69,06% | 0,692 | 0,770 |
-| Whole-image baseline (ensemble+TTA) | 278 imagens | 76,26% | 0,763 | 0,829 |
+| Region-Aware ResNet-18 (WithEmbed), regiões fundidas por foto | 2.450 imagens | 70,45% | 0,663 | 0,706 |
+| ResNet-18 convencional (NoEmbed), regiões fundidas por foto | 2.450 imagens | 66,94% | 0,630 | 0,674 |
+| Region-Aware ResNet-18 (WithEmbed), por recorte | 8.295 recortes | 58,36% | 0,543 | 0,556 |
+| Imagem inteira: ramo CBAM (SCIN + mixup + SWA + TTA, 5 seeds) | 2.863 imagens | 79,04% | 0,772 | 0,859 |
+| Imagem inteira: ramo com supervisão de contagem de lesões (7 seeds) | 2.863 imagens | 77,26% | 0,745 | 0,853 |
+| **Imagem inteira: média 50/50 dos dois ramos (modelo de referência final)** | 2.863 imagens | **80,20%** | **0,779** | **0,874** |
+
+Split oficial de 5 folds do ACNE04 (1.460 imagens de teste), comparável ao JAGC (84,11%):
+
+| Modelo | Accuracy | Macro-F1 | QWK |
+|---|---|---|---|
+| Ramo CBAM (1 seed) | 76,64% | 0,719 | 0,847 |
+| Ramo com supervisão de contagem (5 seeds) | 81,64% | 0,788 | 0,885 |
+| **Média 50/50 (mesma configuração do combinado)** | **80,55%** | **0,776** | **0,879** |
+
+Todos os modelos usam backbone ResNet-18. O ramo com contagem segue a formulação de grading + counting do JAGC (`training/run_jagc_original_replica.py --arch resnet18`); os números finais saem de `training/evaluate_final_whole_ensemble.py` (gera `training/results/final_whole_ensemble.json` e a matriz de confusão do artigo). A classe moderada continua sendo o principal gargalo (sensibilidade de 57,6% no combinado, confundida sobretudo com leve).
 
 Detalhes completos (ablation, generalização cross-dataset ACNE04 ↔ coleção própria, desempenho por região) no artigo em `papers/cbeb/CBEB_final.pdf`.
 

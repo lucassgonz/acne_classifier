@@ -17,6 +17,10 @@ COMBINED_ALL = ["--splits", "results/kfold_splits_wholeimage_v2.json",
 COMBINED = COMBINED_ALL + ["--only-source", "a04"]
 HIRES = ["--img-dir", "../data/jagc_replica_384", "--resize", "330", "--crop", "288"]
 
+# Uma thread de BLAS/OpenMP por processo: com varios treinos e workers em paralelo, os buffers por thread
+# do OpenBLAS esgotam a memoria virtual (Windows) e os workers do DataLoader morrem.
+CHILD_ENV = dict(os.environ, OMP_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1", MKL_NUM_THREADS="1")
+
 JOBS = {}
 for s in (45, 46, 47, 48):
     JOBS[f"off{s}"] = (f"jagc_replica_resnet18_seed{s}", s, OFFICIAL + ["--img-dir", "../data/jagc_replica_300"])
@@ -55,7 +59,7 @@ def main():
         while tasks and len(running) < args.parallel:
             n, cmd = tasks.pop(0)
             log = open(os.path.join(args.logs, f"{n}.log"), "w")
-            running.append((n, subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT), time.time()))
+            running.append((n, subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, env=CHILD_ENV), time.time()))
             print(time.strftime("%H:%M:%S"), "iniciou", n, flush=True)
         time.sleep(20)
     print(time.strftime("%H:%M:%S"), "FILA CONCLUIDA", flush=True)
