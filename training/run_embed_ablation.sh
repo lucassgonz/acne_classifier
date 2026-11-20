@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ablacao prioritaria do revisor: embedding anatomico vs ResNet18 sem
+# Ablacao principal: embedding anatomico vs ResNet18 sem
 # embedding, protocolo identico (mesmos hiperparametros, mesmos folds
 # limpos), recorte por regiao. 2 configs x 5 folds = 10 rodadas.
 cd "$(dirname "$0")"

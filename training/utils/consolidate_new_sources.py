@@ -11,7 +11,7 @@ Tambem descarta arquivos corrompidos/ilegveis (checagem via PIL) -- filtro
 de "possivel de anotar".
 
 Gera um manifesto CSV com a fonte original de cada imagem mantida, para
-citar no artigo depois.
+citacao das fontes.
 
 Uso:
     cd training

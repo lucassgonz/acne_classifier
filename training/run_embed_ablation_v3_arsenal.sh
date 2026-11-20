@@ -1,8 +1,8 @@
 #!/bin/bash
 # Repete a ablacao embedding v3 (crops filtrados por visibilidade,
 # data/final_v3) mas com o MESMO arsenal usado no whole-image (SWA+TTA),
-# pedido pelo usuario pra elevar os numeros (58,36%/56,68% bare, baixos
-# demais pro artigo) mantendo a comparacao with/without.
+# para elevar os numeros (58,36%/56,68% sem SWA/TTA) mantendo a
+# comparacao with/without.
 cd "$(dirname "$0")"
 source venv/bin/activate
 

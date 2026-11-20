@@ -1,5 +1,5 @@
 """
-Item do revisor: quantifica o quanto o erro de deteccao do YOLOv8 (treinado
+Quantifica o quanto o erro de deteccao do YOLOv8 (treinado
 em utils/build_yolo_dataset.py / run_yolo_train.py para reproduzir as
 caixas do MediaPipe) afeta a classificacao final de gravidade, comparando:
 
@@ -8,8 +8,7 @@ caixas do MediaPipe) afeta a classificacao final de gravidade, comparando:
 
 ...passados pelo MESMO classificador ja treinado (ensemble ONNX de 5
 seeds, mobile_models/), nas mesmas imagens de teste do detector. A
-diferenca de acuracia entre (a) e (b) e a "contribuicao do erro do YOLO"
-pedida pelo revisor.
+diferenca de acuracia entre (a) e (b) e a "contribuicao do erro do YOLO".
 
 Uso:
     cd training

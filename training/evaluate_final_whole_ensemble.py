@@ -1,11 +1,11 @@
 """
 Numeros finais do modelo de imagem inteira: media 50/50 (peso fixado a priori, sem ajuste) entre
-  A = receita do artigo (ResNet-18 + CBAM + SCIN + mixup + SWA + TTA, ensemble de seeds) e
+  A = receita CBAM (ResNet-18 + CBAM + SCIN + mixup + SWA + TTA, ensemble de seeds) e
   B = receita com supervisao de contagem de lesoes (ResNet-18, run_jagc_original_replica.py, ensemble de seeds),
 nos dois protocolos: dataset combinado (n=2863) e split oficial do ACNE04 (n=1460). Tambem reporta
 cada grupo sozinho. Salva results/final_whole_ensemble.json e a matriz de confusao normalizada do combinado.
 
-Uso: python evaluate_final_whole_ensemble.py [--fig ../papers/cbeb/figures/fig8_ensemble.png]
+Uso: python evaluate_final_whole_ensemble.py [--fig results/fig_ensemble_confusion.png]
 """
 import argparse
 import json

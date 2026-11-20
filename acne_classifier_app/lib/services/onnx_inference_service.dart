@@ -24,7 +24,7 @@ class RegionPrediction {
 /// trained seeds, exported to ONNX — see training/utils/export_onnx.py) for
 /// each face region crop, entirely on-device. No network call is made.
 ///
-/// This is the same architecture and weights reported in the paper, run
+/// This is the same architecture and weights as the trained model, run
 /// without test-time augmentation (TTA is skipped on-device to keep
 /// inference fast — each analysis already means 5 seeds x 5 regions = 25
 /// forward passes).

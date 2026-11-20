@@ -5,7 +5,7 @@ calcula via MediaPipe Face Mesh -- usadas aqui como "verdade" (ground
 truth) para treinar um detector YOLOv8 que reproduza a mesma segmentacao
 de 5 regioes (testa/nariz/queixo/bochecha esq/dir).
 
-Objetivo (item do revisor): treinar o YOLOv8 que faltava no repositorio
+Objetivo: treinar o YOLOv8 que faltava no repositorio
 (pesos originais nao foram salvos), para depois medir (a) o quanto as
 caixas do YOLO divergem das do MediaPipe (erro de deteccao) e (b) o
 quanto esse erro de deteccao muda a classificacao final de gravidade

@@ -29,7 +29,7 @@ training/models/backbone_scin_pretrained_v2.pth
 training/models/backbone_scin_pretrained_r34.pth
 training/models/backbone_scin_plus_manual.pth
 
-# Modelos em papers (intermediários de experimentos)
+# Intermediate experiment models
 papers/sibgrapi/results/*.pth
 
 # Python
@@ -61,14 +61,35 @@ acne_classifier_app/.flutter-plugins-dependencies
 acne_classifier_app/build/
 acne_classifier_app/android/local.properties
 
-# Papers intermediários
+# Local documents (not versioned)
 papers/
 _article_extract.txt
 
 
-# IA utilizada para formatação dos papers
+# Local tool settings
 .claude/
 
 # Markdown: only README files are versioned
 *.md
 !README.md
+
+# Flutter generated / build caches
+acne_classifier_app/android/.gradle/
+**/ephemeral/
+acne_classifier_app/ios/Flutter/Generated.xcconfig
+
+# Legacy or invalid experiment artifacts (kept locally, not versioned)
+training/results/**/INVALID_*
+training/results/INVALID_*
+training/results/kfold_wholeimage_smoketest/
+training/results/*_NOTUSED.json
+training/results/kfold/mil_with/
+training/results/yolo/region_detector/weights/
+training/models/
+training/notebooks/
+training/*.pt
+jagc_colab*.ipynb
+training/run_overnight_queue.sh
+training/utils/make_paper_figures.py
+training/utils/make_fig2_datasets.py
+training/results/*smoketest*.json

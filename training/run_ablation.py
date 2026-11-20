@@ -158,7 +158,7 @@ class ResNet18CBAM(nn.Module):
 
 
 class ResNet18WithEmbed(nn.Module):
-    """Modelo original do paper: ResNet-18 + embedding anatômico (64-d)."""
+    """Modelo principal: ResNet-18 + embedding anatômico (64-d)."""
 
     def __init__(self, num_classes=4, num_regions=5, pretrained_backbone_path=None, arch="resnet18"):
         super().__init__()

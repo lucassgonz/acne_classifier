@@ -1,5 +1,5 @@
 #!/bin/bash
-# Ensemble multi-seed do whole_base + SWA + TTA (receita final do artigo:
+# Ensemble multi-seed do whole_base + SWA + TTA (receita final:
 # 5 seeds, SWA, mixup 0.2, TTA 7 views). Seed 42 ja esta em
 # results/kfold_wholeimage/whole_base_swa_tta/; aqui rodamos 43-46.
 cd "$(dirname "$0")"

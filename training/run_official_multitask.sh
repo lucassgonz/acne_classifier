@@ -1,7 +1,7 @@
 #!/bin/bash
 # Treino multi-task (severidade + contagem real de licoes) no split
 # oficial do ACNE04, mesma receita CBAM+SWA+TTA do whole_official_cbam_swa_tta
-# (76,64% acc, Secao IV-F do artigo) + cabeca de regressao de contagem,
+# (76,64% acc) + cabeca de regressao de contagem,
 # pra tentar fechar o gap contra o JAGC (84,11%, mesmo split, usa
 # supervisao conjunta grading+counting).
 cd "$(dirname "$0")"

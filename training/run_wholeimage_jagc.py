@@ -1,9 +1,9 @@
 """
 Replica fielmente a TECNICA do JAGC (Wu et al., ICCV2019,
 github.com/xpwu95/LDL/blob/master/code/train.py e
-code/model/resnet50.py, lidos diretamente desta sessao) -- mas com o
+code/model/resnet50.py) -- mas com o
 backbone ResNet-18+CBAM proprio deste trabalho (nao ResNet-50), mantendo
-a "essencia" do artigo (arquitetura leve, region-aware por design,
+a "essencia" deste trabalho (arquitetura leve, region-aware por design,
 pretrain SCIN) e so trocando a SUPERVISAO pela deles.
 
 Diferenca pro run_wholeimage_multitask.py (regressao escalar simples,
@@ -14,7 +14,7 @@ distribuicao suave derivada dessa gaussiana (nao mais rotulo rigido);
 ha uma terceira saida (cou2cls, soma deterministica dos "baldes" de
 contagem que correspondem a cada grau) com uma loss de consistencia
 extra ligando contagem e classificacao. 3 losses KL-divergence
-combinadas com os mesmos pesos do paper original (sigma=3.0, lam=0.6).
+combinadas com os mesmos pesos do JAGC original (sigma=3.0, lam=0.6).
 
 Uso:
     cd training
@@ -42,9 +42,9 @@ from torchvision import transforms as T
 from run_ablation import CBAM, _load_backbone_features, BACKBONE_OUT_FEATURES, build_transforms, get_device, set_seed
 
 NUM_COUNT_CLASSES = 65
-SIGMA = 3.0   # desvio da gaussiana sobre contagem -- igual ao paper original (30*0.1)
-LAM = 0.6     # peso classificacao vs contagem na loss combinada -- igual ao paper original (6*0.1)
-BUCKETS = [(0, 5), (5, 20), (20, 50), (50, NUM_COUNT_CLASSES)]  # mesmos limites do paper (criterion())
+SIGMA = 3.0   # desvio da gaussiana sobre contagem -- igual ao JAGC original (30*0.1)
+LAM = 0.6     # peso classificacao vs contagem na loss combinada -- igual ao JAGC original (6*0.1)
+BUCKETS = [(0, 5), (5, 20), (20, 50), (50, NUM_COUNT_CLASSES)]  # mesmos limites do JAGC (criterion())
 
 
 def gen_label_distribution(counts, sigma=SIGMA, num_count_classes=NUM_COUNT_CLASSES):

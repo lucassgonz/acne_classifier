@@ -19,9 +19,8 @@ from collections import defaultdict
 
 import numpy as np
 
-OFFICIAL_DIR = ("/private/tmp/claude-501/-Users-GonLu-Documents-Projetos-pibic-final/"
-                 "927f7222-5870-4ba0-a727-5729557b32fe/scratchpad/acne04_official/"
-                 "Detection_extracted/Detection/VOC2007/ImageSets/Main")
+OFFICIAL_DIR = ("../data/acne04_official/"
+                "Detection_extracted/Detection/VOC2007/ImageSets/Main")
 
 
 def main():

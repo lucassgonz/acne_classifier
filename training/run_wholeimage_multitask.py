@@ -1,5 +1,5 @@
 """
-Treina o backbone CBAM (Section IV-E/F do artigo) com aprendizado CONJUNTO
+Treina o backbone CBAM com aprendizado CONJUNTO
 severidade+contagem de licoes, replicando a supervisao usada pelo JAGC
 (Wu et al., ICCV2019) -- mas com a contagem REAL e oficial do proprio
 release do ACNE04 (baixada em utils/build_official_acne04_split.py /
@@ -8,7 +8,7 @@ add_lesion_counts_to_official_split.py), nao uma estimativa.
 So roda no split OFICIAL (results/kfold_splits_official_acne04.json),
 que e onde temos contagem real pra TODAS as imagens (AcneLevel = release
 oficial, 1457 imagens) -- objetivo direto: fechar o gap de 7,47pp contra
-o JAGC (76,64% vs 84,11%) identificado na Secao IV-F do artigo.
+o JAGC (76,64% vs 84,11%) no split oficial.
 
 Script isolado (nao reusa train_model() de run_ablation.py) pra nao
 arriscar quebrar nada do pipeline ja validado -- cabeca de regressao

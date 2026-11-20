@@ -8,7 +8,7 @@ Motivacao: o baseline de imagem inteira (data/wholeimage) mostrou que ver
 mais contexto facial de uma vez eleva muito a acuracia (71.8% vs ~50% do
 pipeline de crop unico). A fusao multi-regiao tenta recuperar parte desse
 contexto (varias regioes da mesma pessoa) sem abrir mao da identidade de
-regiao (mantida via embedding), que e a base da contribuicao do artigo.
+regiao (mantida via embedding), que e a base da contribuicao do projeto.
 
 Como a deteccao/qualidade de crop falha para varias imagens, a maioria dos
 individuos NAO tem as 5 regioes completas (so ~6-8% tem as 5). Em vez de

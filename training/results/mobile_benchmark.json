@@ -40,7 +40,7 @@
     }
   },
   "emulator_reference": {
-    "device": "Android emulator (sdk gphone64 arm64, ARM64 system image, API 37) -- referencia historica, substituido pelo real_device acima para os numeros finais do artigo",
+    "device": "Android emulator (sdk gphone64 arm64, ARM64 system image, API 37) -- referencia historica, substituido pelo real_device acima para os numeros finais",
     "model": "5x ResNet18WithEmbed (region-aware), ONNX, seeds 42-46, ~45MB cada",
     "single_run": {
       "model_load_ms": 2036,

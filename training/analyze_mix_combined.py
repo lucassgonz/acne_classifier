@@ -31,7 +31,7 @@ def report(tag, pred, Y, N):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--a", nargs="+", required=True, help="grupo A (ex: receita do artigo)")
+    ap.add_argument("--a", nargs="+", required=True, help="grupo A (ex: receita CBAM)")
     ap.add_argument("--b", nargs="+", required=True, help="grupo B (ex: replica JAGC)")
     ap.add_argument("--weight", type=float, default=0.5, help="peso do grupo A")
     ap.add_argument("--bias", action="store_true")

@@ -1,7 +1,7 @@
 """
 Ensemble final: media das probabilidades softmax das 5 seeds (42-46) de
 uma config de imagem inteira (default: whole_base + SWA + TTA), por
-imagem -- a mesma receita do modelo final region-aware do artigo.
+imagem -- a mesma receita do modelo final region-aware.
 
 Cada seed ja tem TTA (7 views) aplicado na propria predicao salva; aqui so
 fazemos a segunda camada de ensemble (entre seeds), nao entre views.
