@@ -1,0 +1,22 @@
+# Gradle / Android Studio
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# The root .gitignore excludes every data/ folder (datasets); keep the app's source package
+!app/src/main/java/br/edu/ifce/acneapp/data/
+
+# Signing keys
+*.jks
+*.keystore
+
+# OS
+.DS_Store
+Thumbs.db

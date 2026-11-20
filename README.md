@@ -1,113 +1,110 @@
 # Region-Aware ResNet-18 for Facial Acne Severity Classification
 
-Classificação automática da gravidade da acne (escala de Hayashi, níveis 0–3) a partir de imagens faciais, combinando segmentação anatômica por landmarks com uma ResNet-18 que incorpora embeddings de região aprendíveis.
+Automatic acne severity grading (Hayashi scale, levels 0–3) from facial images, combining landmark-based anatomical segmentation with a ResNet-18 that incorporates learnable region embeddings.
 
-**Regiões**: testa, nariz, queixo, bochecha esquerda, bochecha direita
-**Classes**: 0 = leve, 1 = moderada, 2 = severa, 3 = muito severa
-
-Artigo completo em [`papers/cbeb/CBEB_final.pdf`](papers/cbeb/CBEB_final.pdf) (fonte: [`CBEB_final.tex`](papers/cbeb/CBEB_final.tex)).
+**Regions**: forehead, nose, chin, left cheek, right cheek
+**Classes**: 0 = mild, 1 = moderate, 2 = severe, 3 = very severe
 
 ---
 
-## Contexto e trabalho relacionado
+## Background and related work
 
-Este projeto teve como uma de suas referências o trabalho *"AcneNet: A Deep CNN Based Classification Approach for Acne Classes"* ([IEEE Xplore](https://ieeexplore.ieee.org/document/8850935)), que reporta acurácia acima de 94% na classificação de classes de acne. Esse número serviu de referência inicial de expectativa de desempenho, mas não é diretamente comparável ao problema tratado aqui: escalas, protocolos de avaliação e datasets diferem. "AcneNet" é o nome do trabalho de referência, não deste projeto.
+One of the references for this project was *"AcneNet: A Deep CNN Based Classification Approach for Acne Classes"* ([IEEE Xplore](https://ieeexplore.ieee.org/document/8850935)), which reports accuracy above 94% for acne class classification. That figure served as an initial performance expectation, but it is not directly comparable to the problem addressed here: grading scales, evaluation protocols and datasets differ. "AcneNet" is the name of that reference work, not of this project.
 
-Os resultados finais deste trabalho foram obtidos sob um protocolo deliberadamente rigoroso (splits verificados sem vazamento de imagem entre treino/val/teste, ablation controlada, generalização cross-dataset), o que explica números mais conservadores do que os relatados por trabalhos que não reportam essas verificações.
+The results reported here were obtained under a deliberately strict protocol (splits verified for image leakage between train/val/test, a controlled ablation, and cross-dataset generalization), which explains why the numbers are more conservative than those of works that do not report such checks.
 
 ---
 
-## Arquitetura
+## Architecture
 
 ```
-Recorte de região facial (224×224) + índice da região
+Facial region crop (224×224) + region index
      │
      ▼
 ResNet-18 backbone (ImageNet → SCIN → fine-tuning)  →  feature vector (512-d)
      │
      ▼
-Embedding de região aprendível (5×64)  →  concatenado ao feature vector
+Learnable region embedding (5×64)  →  concatenated with the feature vector
      │
      ▼
-MLP classificador (Dropout + BatchNorm)  →  logits (4 classes)
+MLP classifier (Dropout + BatchNorm)  →  logits (4 classes)
 ```
 
-O modelo final combina Stochastic Weight Averaging (SWA), ensemble de 5 seeds independentes e test-time augmentation (7 views). As classes `ResNet18WithEmbed` e `ResNet18NoEmbed` (usada na ablation) estão definidas em [`training/run_ablation.py`](training/run_ablation.py).
+The final model combines Stochastic Weight Averaging (SWA), an ensemble of 5 independent seeds and test-time augmentation (7 views). The `ResNet18WithEmbed` and `ResNet18NoEmbed` (used in the ablation) classes are defined in [`training/run_ablation.py`](training/run_ablation.py).
 
-Duas arquiteturas complementares também foram avaliadas (Seções IV-F e IV-G do artigo):
-- **Whole-image baseline** ([`training/run_wholeimage.py`](training/run_wholeimage.py)): classifica a imagem inteira, sem recorte por região.
-- **Multi-region fusion** ([`training/run_multiregion_fusion.py`](training/run_multiregion_fusion.py)): funde todas as regiões disponíveis da mesma imagem numa única predição, mantendo o embedding anatômico.
+Two complementary architectures were also evaluated:
+- **Whole-image baseline** ([`training/run_wholeimage.py`](training/run_wholeimage.py)): classifies the entire image, without region crops.
+- **Multi-region fusion** ([`training/run_multiregion_fusion.py`](training/run_multiregion_fusion.py)): fuses all available regions of the same image into a single prediction, keeping the anatomical embedding.
 
 ---
 
-## Estrutura do Repositório
+## Repository structure
 
 ```
 training/
-  run_ablation.py                       Modelo principal (WithEmbed/NoEmbed) + treino + ablation
-  run_wholeimage.py                     Baseline de imagem inteira
-  run_multiregion_fusion.py             Fusão multi-região
-  pretrain_backbone.py                  Pré-treino do backbone (ImageNet → SCIN)
-  evaluate_ensemble_tta.py              Avaliação ensemble + TTA (modelo de região)
-  evaluate_wholeimage_ensemble_tta.py   Avaliação ensemble + TTA (imagem inteira)
-  evaluate_multiregion_ensemble_tta.py  Avaliação ensemble + TTA (fusão multi-região)
-  evaluate_by_region.py                 Desempenho por região anatômica
-  predict.py                            Inferência via linha de comando (um checkpoint por vez)
-  model.py                              Arquitetura legada (não usada pelo pipeline atual; mantida por histórico)
-  models/                               Backbones e checkpoints finais (não versionados; ver abaixo)
-  results/                              Resultados de cada experimento (JSON)
+  run_ablation.py                       Main model (WithEmbed/NoEmbed) + training + ablation
+  run_wholeimage.py                     Whole-image baseline
+  run_multiregion_fusion.py             Multi-region fusion
+  pretrain_backbone.py                  Backbone pre-training (ImageNet → SCIN)
+  evaluate_ensemble_tta.py              Ensemble + TTA evaluation (region model)
+  evaluate_wholeimage_ensemble_tta.py   Ensemble + TTA evaluation (whole image)
+  evaluate_multiregion_ensemble_tta.py  Ensemble + TTA evaluation (multi-region fusion)
+  evaluate_by_region.py                 Per-region performance
+  predict.py                            Command-line inference (one checkpoint at a time)
+  model.py                              Legacy architecture (not used by the current pipeline; kept for history)
+  models/                               Backbones and final checkpoints (not versioned; see below)
+  results/                              Results of each experiment (JSON)
   utils/
-    segment_faces_mediapipe.py          Segmentação facial (MediaPipe Face Mesh, 478 pontos)
-    prepare_acne04_split.py             Split treino/val/teste (70/15/15) do ACNE04
-    merge_manual_data.py                Funde a coleção anotada com o ACNE04 (protocolo anti-vazamento)
-    consolidate_new_sources.py          Consolidação de fontes públicas adicionais
-    prepare_scin_pretrain.py            Preparação do SCIN para pré-treino do backbone
-    prepare_wholeimage_data.py          Preparação do dataset de imagem inteira
+    segment_faces_mediapipe.py          Facial segmentation (MediaPipe Face Mesh, 478 landmarks)
+    prepare_acne04_split.py             ACNE04 train/val/test split (70/15/15)
+    merge_manual_data.py                Merges the annotated collection with ACNE04 (leakage-safe protocol)
+    consolidate_new_sources.py          Consolidation of additional public sources
+    prepare_scin_pretrain.py            SCIN preparation for backbone pre-training
+    prepare_wholeimage_data.py          Whole-image dataset preparation
 segment/
-  yolo_train_and_segment_v2.ipynb       Segmentação legada via YOLOv8 (histórico; substituída por MediaPipe)
-acne_classifier_app/                    App Flutter (protótipo mobile)
-papers/
-  cbeb/CBEB_final.tex, CBEB_final.pdf   Artigo atual (CBEB)
-  sibgrapi/                             Artigo SIBGRAPI relacionado
+  yolo_train_and_segment_v2.ipynb       Legacy YOLOv8 segmentation (historical; replaced by MediaPipe)
+acne_classifier_app/                    Flutter app (mobile prototype)
+acne_classifier_android/                Native Android app in Kotlin (Jetpack Compose)
+mobile_models/                          ONNX ensemble (5 seeds) used by both apps
 ```
 
-> O dataset (ACNE04 + coleção anotada pelos autores) não está incluído no repositório por tamanho e, no caso da coleção própria, por não ser um dataset público redistribuível. Veja a seção "Dados" abaixo.
+> The dataset (ACNE04 + the collection annotated by the authors) is not included in the repository because of its size and, for the authors' collection, because it is not a redistributable public dataset. See "Data" below.
 
 ---
 
-## Dados
+## Data
 
-O modelo é treinado sobre a combinação de duas fontes de imagens:
+The model is trained on the combination of two image sources:
 
-| Fonte | Descrição | Link |
+| Source | Description | Link |
 |---|---|---|
-| ACNE04 | Dataset público, rótulos originais na escala Hayashi | [Kaggle](https://www.kaggle.com/datasets/manuelhettich/acne04) |
-| Coleção anotada pelos autores | Imagens de múltiplas fontes públicas, anotadas e revisadas manualmente pelos autores na escala Hayashi | não redistribuível diretamente; ver nota abaixo |
+| ACNE04 | Public dataset, original labels on the Hayashi scale | [Kaggle](https://www.kaggle.com/datasets/manuelhettich/acne04) |
+| Collection annotated by the authors | Images from multiple public sources, manually annotated and reviewed by the authors on the Hayashi scale | not directly redistributable; see the note below |
 
-Cada imagem é segmentada em até 5 recortes anatômicos via MediaPipe Face Mesh (`training/utils/segment_faces_mediapipe.py`). O split treino/val/teste é feito **antes** da segmentação, ao nível da imagem original, garantindo que todos os recortes de uma mesma foto fiquem no mesmo split.
+Each image is segmented into up to 5 anatomical crops with MediaPipe Face Mesh (`training/utils/segment_faces_mediapipe.py`). The train/val/test split is made **before** segmentation, at the level of the original image, so all crops of the same photo stay in the same split.
 
-**Dataset processado e checkpoints treinados**: disponibilizados à parte (fora do repositório, por tamanho) em `dataset.zip` (~620 MB) e `models.zip` (~1,1 GB). Para usar:
+**Processed dataset and trained checkpoints**: distributed separately (outside the repository, because of their size) as `dataset.zip` (~620 MB) and `models.zip` (~1.1 GB). To use them:
 
 ```
-dataset.zip → extrair em data/        (cria data/final, data/wholeimage, data/manual_annotations, data/manual_crops, data/acne_1024)
-models.zip  → extrair em training/models/   (cria os checkpoints finais e o backbone)
+dataset.zip → extract into data/            (creates data/final, data/wholeimage, data/manual_annotations, data/manual_crops, data/acne_1024)
+models.zip  → extract into training/models/ (creates the final checkpoints and the backbone)
 ```
 
 ---
 
-## Requisitos de Hardware
+## Hardware requirements
 
-- **GPU NVIDIA** com CUDA 12.1, ou
-- **Apple Silicon** (M1 ou superior) via backend MPS do PyTorch
+- **NVIDIA GPU** with CUDA 12.1, or
+- **Apple Silicon** (M1 or later) through the PyTorch MPS backend
 - Python 3.9+
 
-O código detecta o dispositivo automaticamente (`cuda` → `mps` → `cpu`).
+The code selects the device automatically (`cuda` → `mps` → `cpu`).
 
 ---
 
-## Configuração do Ambiente
+## Environment setup
 
-**GPU NVIDIA (CUDA):**
+**NVIDIA GPU (CUDA):**
 ```bash
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
@@ -120,37 +117,37 @@ python -m venv venv
 source venv/bin/activate
 pip install -r training/requirements_mps.txt
 ```
-> `mediapipe` força upgrade do numpy para ≥2.0, o que quebra o `ColorJitter` do torchvision em Apple Silicon. Instale mediapipe separadamente, rode a segmentação, e reinstale `numpy<2.0,>=1.26.0` antes de treinar (ver comentário em `requirements_mps.txt`).
+> `mediapipe` forces numpy ≥2.0, which breaks torchvision's `ColorJitter` on Apple Silicon. Install mediapipe separately, run the segmentation, and reinstall `numpy<2.0,>=1.26.0` before training (see the comment in `requirements_mps.txt`).
 
 ---
 
-## Pipeline de Treinamento (do zero)
+## Training pipeline (from scratch)
 
-> Os passos 1–3 documentam como `data/final` e `data/wholeimage` foram originalmente construídos, mas o **`dataset.zip` compartilhado já contém esse resultado pronto**. Para retreinar ou reproduzir resultados, pule direto para o passo 4 (ou para "Reproduzir os resultados sem retreinar", abaixo, se também tiver o `models.zip`).
+> Steps 1–3 document how `data/final` and `data/wholeimage` were originally built, but the shared **`dataset.zip` already contains that output**. To retrain or reproduce results, go straight to step 4 (or to "Reproducing the results without retraining" below, if you also have `models.zip`).
 
-1. **Split do ACNE04 (70/15/15, por imagem)**
+1. **ACNE04 split (70/15/15, per image)**
    ```bash
    python training/utils/prepare_acne04_split.py --acne04 acne_1024 --output data/acne04_images
    ```
 
-2. **Segmentação facial (MediaPipe)**
+2. **Facial segmentation (MediaPipe)**
    ```bash
    cd training
    python utils/segment_faces_mediapipe.py --input-dir ../data/manual_annotations --output-dir ../data/manual_crops
    ```
 
-3. **Fundir a coleção anotada com o ACNE04** (sem vazamento entre splits)
+3. **Merge the annotated collection with ACNE04** (no leakage between splits)
    ```bash
    python training/utils/merge_manual_data.py --annotations-dir data/manual_annotations --crops-dir data/manual_crops --final-dir data/final
    ```
 
-4. **Pré-treinar o backbone (ImageNet → SCIN)**
+4. **Pre-train the backbone (ImageNet → SCIN)**
    ```bash
    python training/utils/prepare_scin_pretrain.py --output data/scin_pretrain --min-samples 30
    python training/pretrain_backbone.py --data-dir data/scin_pretrain --epochs 15
    ```
 
-5. **Treinar o modelo principal (5 seeds, com SWA)**
+5. **Train the main model (5 seeds, with SWA)**
    ```bash
    cd training
    for seed in 42 43 44 45 46; do
@@ -161,93 +158,93 @@ pip install -r training/requirements_mps.txt
    done
    ```
 
-6. **Avaliar ensemble + TTA**
+6. **Evaluate ensemble + TTA**
    ```bash
    python evaluate_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_swa --tag with_embedding --tta-views 7
    ```
 
 ---
 
-## Reproduzir os resultados sem retreinar
+## Reproducing the results without retraining
 
-O treino completo (5 seeds × 4 configurações) leva várias horas de GPU. Com `dataset.zip` e `models.zip` já extraídos (ver seção "Dados"), dá para reproduzir os números do artigo direto:
+Full training (5 seeds × 4 configurations) takes several GPU hours. With `dataset.zip` and `models.zip` extracted (see "Data"), the held-out test split results can be reproduced directly:
 
 ```bash
 cd training
 
-# Modelo principal (Region-Aware ResNet-18): 64,18% acc / QWK 0,718
+# Main model (Region-Aware ResNet-18): 64.18% acc / QWK 0.718
 python evaluate_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_swa --tag with_embedding --tta-views 7
 
-# Ablation (ResNet-18 convencional, sem embedding): 64,18% acc / QWK 0,698
+# Ablation (conventional ResNet-18, no embedding): 64.18% acc / QWK 0.698
 python evaluate_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_noembed_swa --tag no_embedding --tta-views 7
 
-# Baseline de imagem inteira: 76,26% acc / QWK 0,829
+# Whole-image baseline: 76.26% acc / QWK 0.829
 python evaluate_wholeimage_ensemble_tta.py --data-dir ../data/wholeimage --checkpoints-dir models/wholeimage_clean_swa --tta-views 7
 
-# Fusão multi-região: 69,06% acc / QWK 0,770
+# Multi-region fusion: 69.06% acc / QWK 0.770
 python evaluate_multiregion_ensemble_tta.py --data-dir ../data/final --checkpoints-dir models/multiregion_ckpt_v3 --tta-views 7
 
-# Desempenho por região anatômica
+# Per-region performance
 python evaluate_by_region.py --data-dir ../data/final --checkpoints-dir models/ablation_ckpt_clean_swa --tag with_embedding --tta-views 7
 ```
 
-Para classificar uma única imagem já recortada por região:
+To classify a single image that is already cropped to a region:
 ```bash
-python predict.py caminho/para/imagem.jpg --region forehead --weights models/ablation_ckpt_clean_swa/with_embedding_seed42.pth
+python predict.py path/to/image.jpg --region forehead --weights models/ablation_ckpt_clean_swa/with_embedding_seed42.pth
 ```
-(usa um único seed, não o ensemble completo — para o resultado reportado no artigo, use os scripts `evaluate_*` acima.)
+(this uses a single seed, not the full ensemble; for the reported results, use the `evaluate_*` scripts above.)
 
 ---
 
-## Resultados
+## Results
 
-Validação cruzada agrupada em 5 folds no conjunto combinado ACNE04 + AcneLevel (2.863 imagens, sem a mesma foto em treino e teste), métricas agregadas dos 5 folds de teste, última época, sem seleção no teste:
+Grouped 5-fold cross-validation on the combined ACNE04 + AcneLevel set (2,863 images, never the same photo in train and test); metrics pooled over the 5 test folds, last epoch, no selection on the test set:
 
-| Modelo | Unidade de avaliação | Accuracy | Macro-F1 | QWK |
+| Model | Evaluation unit | Accuracy | Macro-F1 | QWK |
 |---|---|---|---|---|
-| Region-Aware ResNet-18 (WithEmbed), regiões fundidas por foto | 2.450 imagens | 70,45% | 0,663 | 0,706 |
-| ResNet-18 convencional (NoEmbed), regiões fundidas por foto | 2.450 imagens | 66,94% | 0,630 | 0,674 |
-| Region-Aware ResNet-18 (WithEmbed), por recorte | 8.295 recortes | 58,36% | 0,543 | 0,556 |
-| Imagem inteira: ramo CBAM (SCIN + mixup + SWA + TTA, 5 seeds) | 2.863 imagens | 79,04% | 0,772 | 0,859 |
-| Imagem inteira: ramo com supervisão de contagem de lesões (7 seeds) | 2.863 imagens | 77,26% | 0,745 | 0,853 |
-| **Imagem inteira: média 50/50 dos dois ramos (modelo de referência final)** | 2.863 imagens | **80,20%** | **0,779** | **0,874** |
+| Region-Aware ResNet-18 (WithEmbed), regions fused per photo | 2,450 images | 70.45% | 0.663 | 0.706 |
+| Conventional ResNet-18 (NoEmbed), regions fused per photo | 2,450 images | 66.94% | 0.630 | 0.674 |
+| Region-Aware ResNet-18 (WithEmbed), per crop | 8,295 crops | 58.36% | 0.543 | 0.556 |
+| Whole image: CBAM branch (SCIN + mixup + SWA + TTA, 5 seeds) | 2,863 images | 79.04% | 0.772 | 0.859 |
+| Whole image: lesion-count supervised branch (7 seeds) | 2,863 images | 77.26% | 0.745 | 0.853 |
+| **Whole image: 50/50 average of both branches (final reference model)** | 2,863 images | **80.20%** | **0.779** | **0.874** |
 
-Split oficial de 5 folds do ACNE04 (1.460 imagens de teste), comparável ao JAGC (84,11%):
+Official ACNE04 5-fold split (1,460 test images), comparable to JAGC (84.11%):
 
-| Modelo | Accuracy | Macro-F1 | QWK |
+| Model | Accuracy | Macro-F1 | QWK |
 |---|---|---|---|
-| Ramo CBAM (1 seed) | 76,64% | 0,719 | 0,847 |
-| Ramo com supervisão de contagem (5 seeds) | 81,64% | 0,788 | 0,885 |
-| **Média 50/50 (mesma configuração do combinado)** | **80,55%** | **0,776** | **0,879** |
+| CBAM branch (1 seed) | 76.64% | 0.719 | 0.847 |
+| Lesion-count supervised branch (5 seeds) | 81.64% | 0.788 | 0.885 |
+| **50/50 average (same configuration as on the combined set)** | **80.55%** | **0.776** | **0.879** |
 
-Todos os modelos usam backbone ResNet-18. O ramo com contagem segue a formulação de grading + counting do JAGC (`training/run_jagc_original_replica.py --arch resnet18`); os números finais saem de `training/evaluate_final_whole_ensemble.py` (gera `training/results/final_whole_ensemble.json` e a matriz de confusão do artigo). A classe moderada continua sendo o principal gargalo (sensibilidade de 57,6% no combinado, confundida sobretudo com leve).
-
-Detalhes completos (ablation, generalização cross-dataset ACNE04 ↔ coleção própria, desempenho por região) no artigo em `papers/cbeb/CBEB_final.pdf`.
+All models use a ResNet-18 backbone. The lesion-count branch follows JAGC's grading + counting formulation (`training/run_jagc_original_replica.py --arch resnet18`); the final numbers come from `training/evaluate_final_whole_ensemble.py` (which writes `training/results/final_whole_ensemble.json` and the confusion matrix). The moderate class remains the main bottleneck (57.6% sensitivity on the combined set, confused mostly with mild).
 
 ---
 
-## Modelo (entrada/saída)
+## Model (input/output)
 
-| Entrada | Formato |
+| Input | Format |
 |---------|---------|
-| Recorte de região | tensor `[batch, 3, 224, 224]` |
-| Índice da região | tensor `[batch]` (int, 0–4) |
+| Region crop | tensor `[batch, 3, 224, 224]` |
+| Region index | tensor `[batch]` (int, 0–4) |
 
-| Saída | Formato |
+| Output | Format |
 |-------|---------|
-| Logits por classe | tensor `[batch, 4]` |
+| Class logits | tensor `[batch, 4]` |
 
-Índices de região: `0=forehead`, `1=chin`, `2=nose`, `3=left_cheek`, `4=right_cheek`
-
----
-
-## App Mobile
-
-Protótipo em Flutter (`acne_classifier_app/`) que integra o modelo treinado, guiando o usuário por captura de imagem, pré-processamento, predição de gravidade por região e histórico de avaliações.
+Region indices: `0=forehead`, `1=chin`, `2=nose`, `3=left_cheek`, `4=right_cheek`
 
 ---
 
-## Autores
+## Mobile app
+
+A Flutter prototype (`acne_classifier_app/`) integrates the trained model and guides the user through image capture, preprocessing, per-region severity prediction and an assessment history.
+
+There is also a native Android version in Kotlin and Jetpack Compose (`acne_classifier_android/`), with the same flow and the same ONNX ensemble, using ML Kit for face detection and ONNX Runtime for inference. Build instructions are in [`acne_classifier_android/README.md`](acne_classifier_android/README.md).
+
+---
+
+## Authors
 
 Daniel C. Anselmo, Lucas G. Andrade, Enzo G. R. B. Moreira — Instituto Federal do Ceará (IFCE)
-Orientação: Prof. Dr. Pedro P. Rebouças Filho, Prof. Dr. Roger M. Sarmento — PPGCC/IFCE
+Advisors: Prof. Dr. Pedro P. Rebouças Filho, Prof. Dr. Roger M. Sarmento — PPGCC/IFCE

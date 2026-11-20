@@ -16,7 +16,7 @@ training/models_backup/
 training/notebooks/*.pth
 training/notebooks/*.ptl
 backups/
-acnenet_modelo.zip
+*.zip
 
 # Checkpoints intermediarios de ablacao/ensemble (grandes, nao sao o modelo final)
 training/models/*ckpt*/
@@ -62,9 +62,13 @@ acne_classifier_app/build/
 acne_classifier_app/android/local.properties
 
 # Papers intermediários
-papers/entrega_artigos.zip
-papers/*.docx
+papers/
 _article_extract.txt
+
 
 # IA utilizada para formatação dos papers
 .claude/
+
+# Markdown: only README files are versioned
+*.md
+!README.md

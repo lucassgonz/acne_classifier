@@ -1,0 +1,21 @@
+{
+  "name": "rc_scin_with_nocount_seed44",
+  "fold": 4,
+  "splits": "results/kfold_splits_v3.json",
+  "data_dir": "../data/final_v3",
+  "counts": "results/region_lesion_counts.json",
+  "output_dir": "results/kfold",
+  "pretrained_backbone": "models/backbone_scin_pretrained_v2.pth",
+  "no_embed": false,
+  "count_weight": 0.0,
+  "count_bins": 31,
+  "count_sigma": 1.5,
+  "epochs": 40,
+  "patience": 10,
+  "batch_size": 16,
+  "lr": 0.0001,
+  "weight_decay": 0.0001,
+  "mixup_alpha": 0.2,
+  "workers": 4,
+  "seed": 44
+}
